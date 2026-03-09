@@ -1,86 +1,68 @@
 # 📦 PyTONAPI
 
 [![TON](https://img.shields.io/badge/TON-grey?logo=TON&logoColor=40AEF0)](https://ton.org)
+![Python Versions](https://img.shields.io/badge/Python-3.10%20--%203.14-black?color=FFE873&labelColor=3776AB)
 [![PyPI](https://img.shields.io/pypi/v/pytonapi.svg?color=FFE873&labelColor=3776AB)](https://pypi.python.org/pypi/pytonapi)
-![Python Versions](https://img.shields.io/badge/Python-3.9%20--%203.13-black?color=FFE873&labelColor=3776AB)
-[![License](https://img.shields.io/github/license/tonkeeper/pytonapi)](https://github.com/tonkeeper/pytonapi/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/nessshon/pytonapi)](https://github.com/nessshon/pytonapi/blob/main/LICENSE)
+[![Donate](https://img.shields.io/badge/Donate-TON-blue)](https://tonviewer.com/UQCZq3_Vd21-4y4m7Wc-ej9NFOhh_qvdfAkAYAOHoQ__Ness)
 
-![Image](https://telegra.ph//file/f88bcf9051073973edbd6.jpg)
+![Image](assets/banner.png)
 
 ![Downloads](https://pepy.tech/badge/pytonapi)
 ![Downloads](https://pepy.tech/badge/pytonapi/month)
 ![Downloads](https://pepy.tech/badge/pytonapi/week)
 
-Python SDK for [tonapi.io](https://tonapi.io).\
-Information about the API can be found in the  [documentation](https://docs.tonconsole.com/tonapi/api-v2).\
-To use the API **you need an API key**, you can get it here [tonconsole.com](https://tonconsole.com/).
+### Python SDK for [TONAPI](https://tonapi.io)
 
-<blockquote>
-For creating wallets, transferring TON, Jetton, NFTs, and other operations, recommend using <a href="https://github.com/nessshon/tonutils">tonutils</a> in combination with <code>TonapiClient</code>. For more information, refer to the library documentation.
-</blockquote>
+Providing access to TON blockchain data via REST API, real-time streaming, and webhooks.  
+An API key is required and can be obtained at [tonconsole.com](https://tonconsole.com/). Documentation available
+at [docs.tonconsole.com](https://docs.tonconsole.com/).
 
-## Usage
+> For creating wallets, transferring TON, jettons, etc., use [tonutils](https://github.com/nessshon/tonutils).
 
-### Installation
+**Features**
+
+- **REST API** — accounts, NFTs, jettons, DNS, and more
+- **Streaming** — real-time events via SSE and WebSocket
+- **Webhooks** — push notifications with event dispatcher
+
+> If this project has been useful to you, consider supporting its development.  
+> **TON**: `UQCZq3_Vd21-4y4m7Wc-ej9NFOhh_qvdfAkAYAOHoQ__Ness`
+
+## Installation
 
 ```bash
 pip install pytonapi
 ```
 
-### Examples
+## Examples
 
+**REST API**
 
-```python
-from pytonapi import AsyncTonapi
+- [Get account info](examples/get_account_info.py)
+- [Get account transactions](examples/get_account_transactions.py)
+- [Get NFTs by owner](examples/get_nft_by_owner.py)
+- [Get NFTs by collection](examples/get_nft_by_collection.py)
 
+**Streaming** (SSE & WebSocket)
 
-# Declare an asynchronous function for using await
-async def main():
-    # Create a new Tonapi object with the provided API key
-    tonapi = AsyncTonapi(api_key="Your API key")
+- [SSE subscriptions](examples/streaming_sse.py)
+- [WebSocket subscriptions](examples/streaming_websocket.py)
 
-    # Specify the account ID
-    account_id = "EQC-3ilVr-W0Uc3pLrGJElwSaFxvhXXfkiQA3EwdVBHNNess"  # noqa
+**Webhooks**
 
-    # Retrieve account information asynchronously
-    account = await tonapi.accounts.get_info(account_id=account_id)
+- [FastAPI webhook server](examples/webhook_fastapi.py)
+- [aiohttp webhook server](examples/webhook_aiohttp.py)
 
-    # Print account details
-    print(f"Account Address (raw): {account.address.to_raw()}")
-    print(f"Account Address (userfriendly): {account.address.to_userfriendly(is_bounceable=True)}")
-    print(f"Account Balance (nanoton): {account.balance.to_nano()}")
-    print(f"Account Balance (amount): {account.balance.to_amount()}")
+**Transfers** (requires [tonutils](https://github.com/nessshon/tonutils))
 
-
-if __name__ == '__main__':
-    import asyncio
-
-    # Run the asynchronous function
-    asyncio.run(main())
-
-```
-
-* **Additional examples** can be found [examples](https://github.com/tonkeeper/pytonapi/tree/main/examples) folder.
-
-## Donations
-
-**TON** - `UQCDrgGaI6gWK-qlyw69xWZosurGxrpRgIgSkVsgahUtxZR0`
-
-**USDT** (TRC-20) - `TDHMG7JRkmJBDD1qd4bNhdfoy2uzVd8ixA`
-
-## Contribution
-
-We welcome your contributions! If you have ideas for improvement or have identified a bug, please create an issue or
-submit a pull request.
+- [Transfer TON](examples/transfer_ton.py)
+- [Gasless transfer](examples/transfer_gasless.py)
 
 ## Support
 
-Supported by  [TONAPI](https://tonapi.io) and [TON Society](https://github.com/ton-society/grants-and-bounties) (Grants
-and Bounties program).
+Supported by [TON Society](https://github.com/ton-society/grants-and-bounties) and [TONAPI](https://tonapi.io).
 
 ## License
 
-This repository is distributed under the [MIT License](https://github.com/tonkeeper/pytonapi/blob/main/LICENSE). Feel
-free to use, modify, and distribute the code in accordance
-with the terms of the license.
-
+This repository is distributed under the [MIT License](LICENSE).

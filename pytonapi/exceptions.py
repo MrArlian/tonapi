@@ -1,71 +1,202 @@
-from typing import Optional
+import typing as t
+
+__all__ = [
+    "STREAMING_RECOVERABLE",
+    "TONAPI_STATUS_TO_EXCEPTION",
+    "TONAPIBadRequestError",
+    "TONAPIClientError",
+    "TONAPIConnectionError",
+    "TONAPIConnectionLostError",
+    "TONAPIError",
+    "TONAPIForbiddenError",
+    "TONAPIInternalServerError",
+    "TONAPINotFoundError",
+    "TONAPINotImplementedError",
+    "TONAPIRetryLimitError",
+    "TONAPIServerError",
+    "TONAPISessionNotCreatedError",
+    "TONAPIStatusError",
+    "TONAPIStreamingError",
+    "TONAPITooManyRequestsError",
+    "TONAPIUnauthorizedError",
+    "raise_for_status",
+]
 
 
 class TONAPIError(Exception):
-    """Base class for all exceptions."""
+    """Base exception for all TONAPI errors."""
+
+    message: str
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(message)
 
 
-class TONAPIClientError(TONAPIError):
-    """Base class for client-side errors (HTTP 4xx)."""
+class TONAPIConnectionError(TONAPIError):
+    """Network-level error — DNS resolution failure, connection timeout,
+    refused connection, or other transport issues."""
 
 
-class TONAPIServerError(TONAPIError):
-    """Base class for server-side errors (HTTP 5xx)."""
+class TONAPIStatusError(TONAPIError):
+    """API returned a non-2xx HTTP status."""
 
+    status: int
+    hint: t.ClassVar[str] = ""
 
-class TONAPIBadRequestError(TONAPIClientError):
-    """Raised when the client sends a bad request (HTTP 400)."""
-
-
-class TONAPIUnauthorizedError(TONAPIClientError):
-    """Raised when the client is not authorized to access a resource (HTTP 401)."""
-
-    def __init__(self, text: Optional[str] = None):
-        if text and "limit of streaming" in text:
-            raise TONAPISSELimitReachedError(text)
-        super().__init__(
-            "API key is missing or invalid. "
-            "You can get an access token here https://tonconsole.com/"
-        )
-
-
-class TONAPISSEError(TONAPIServerError):
-    """Raised when the server encounters an error (HTTP 4xx)."""
-
-
-class TONAPISSELimitReachedError(TONAPISSEError):
-    """Raises when the limit of streaming connections is reached (HTTP 401)."""
-
-
-class TONAPINotFoundError(TONAPIClientError):
-    """Raised when the requested resource is not found (HTTP 404)."""
-
-
-class TONAPITooManyRequestsError(TONAPIClientError):
-    """Raised when the rate limit is exceeded (HTTP 429)."""
-
-    def __init__(self, text: Optional[str] = None):
-        super().__init__(
-            text or "Too many requests per second. Upgrade your plan "
-                    "on https://tonconsole.com/tonapi/pricing."
-        )
-
-
-class TONAPIInternalServerError(TONAPIServerError):
-    """Raised when the server encounters an internal error (HTTP 500)."""
-
-    def __init__(self, text: Optional[str] = None):
-        if text is not None and "mempool is not enabled" in text:
-            raise TONAPIMempoolNotEnabledError(
-                "Mempool functionality is not enabled on your plan. "
-                "Upgrade your plan on https://tonconsole.com."
-            )
+    def __init__(self, *, status: int, message: str) -> None:
+        self.status = status
+        text = f"HTTP {status}: {message}"
+        if self.hint:
+            text += f" — {self.hint}"
         super().__init__(text)
 
 
-class TONAPIMempoolNotEnabledError(TONAPIClientError):
-    """Raised when mempool functionality is not enabled for the selected plan (HTTP 500)."""
+class TONAPIClientError(TONAPIStatusError):
+    """Client-side HTTP error (4xx)."""
+
+
+class TONAPIServerError(TONAPIStatusError):
+    """Server-side HTTP error (5xx)."""
+
+
+class TONAPIBadRequestError(TONAPIClientError):
+    """HTTP 400 Bad Request."""
+
+    hint = "check query parameters, request body, and path arguments"
+
+
+class TONAPIUnauthorizedError(TONAPIClientError):
+    """HTTP 401 Unauthorized."""
+
+    hint = "get a valid API key at https://tonconsole.com/"
+
+
+class TONAPIForbiddenError(TONAPIClientError):
+    """HTTP 403 Forbidden."""
+
+    hint = "check your API key permissions at https://tonconsole.com/"
+
+
+class TONAPINotFoundError(TONAPIClientError):
+    """HTTP 404 Not Found."""
+
+
+class TONAPITooManyRequestsError(TONAPIClientError):
+    """HTTP 429 Too Many Requests."""
+
+    hint = "reduce request frequency or upgrade your plan at https://tonconsole.com/"
+
+
+class TONAPIInternalServerError(TONAPIServerError):
+    """HTTP 500 Internal Server Error."""
 
 
 class TONAPINotImplementedError(TONAPIServerError):
-    """Raised when the requested method is not implemented (HTTP 501)."""
+    """HTTP 501 Not Implemented."""
+
+
+class TONAPIStreamingError(TONAPIError):
+    """Streaming transport error."""
+
+
+class TONAPIConnectionLostError(TONAPIStreamingError):
+    """Connection lost and reconnect limit exceeded."""
+
+    attempts: int
+
+    def __init__(self, *, attempts: int) -> None:
+        self.attempts = attempts
+        super().__init__(
+            f"Connection lost after {attempts} reconnect attempts",
+        )
+
+
+class TONAPISessionNotCreatedError(TONAPIError):
+    """Session was not created before making a request."""
+
+    def __init__(self, client_name: str) -> None:
+        super().__init__(
+            f"Session is not created. "
+            f"Call 'await {client_name}(...).create_session()' "
+            f"or use 'async with {client_name}(...) as client:'"
+        )
+
+
+class TONAPIRetryLimitError(TONAPIError):
+    """All retry attempts have been exhausted."""
+
+    attempts: int
+    last_status: t.Optional[int]
+    last_error: t.Optional[Exception]
+
+    def __init__(
+        self,
+        *,
+        attempts: int,
+        last_status: t.Optional[int] = None,
+        last_error: t.Optional[Exception] = None,
+    ) -> None:
+        self.attempts = attempts
+        self.last_status = last_status
+        self.last_error = last_error
+        parts = [f"Retry limit exceeded after {attempts} attempts"]
+        if last_status is not None:
+            parts.append(f"last status: {last_status}")
+        if last_error is not None:
+            parts.append(f"last error: {last_error}")
+        super().__init__(", ".join(parts))
+
+
+STREAMING_RECOVERABLE: t.Final[t.Tuple[t.Type[TONAPIError], ...]] = (
+    TONAPIServerError,
+    TONAPITooManyRequestsError,
+    TONAPIStreamingError,
+)
+
+TONAPI_STATUS_TO_EXCEPTION: t.Final[t.Dict[int, t.Type[TONAPIStatusError]]] = {
+    400: TONAPIBadRequestError,
+    401: TONAPIUnauthorizedError,
+    403: TONAPIForbiddenError,
+    404: TONAPINotFoundError,
+    429: TONAPITooManyRequestsError,
+    500: TONAPIInternalServerError,
+    501: TONAPINotImplementedError,
+}
+
+
+def raise_for_status(status: int, body: str, content_type: str = "") -> None:
+    """Raise an appropriate exception for non-2xx HTTP status.
+
+    :param status: HTTP status code.
+    :param body: Response body text.
+    :param content_type: Content-Type header value.
+    :raises TONAPIStatusError: On any mapped HTTP error.
+    """
+    import json
+
+    if "text/html" in content_type:
+        message = "Unexpected HTML response"
+    else:
+        try:
+            data = json.loads(body)
+        except (json.JSONDecodeError,):
+            message = body
+        else:
+            if isinstance(data, dict):
+                message = data.get("error") or data.get("Error") or body
+                if isinstance(message, dict):
+                    message = str(message)
+            else:
+                message = str(data)
+
+    exc_class = TONAPI_STATUS_TO_EXCEPTION.get(status)
+    if exc_class:
+        raise exc_class(status=status, message=message)
+
+    if 400 <= status < 500:
+        raise TONAPIClientError(status=status, message=message)
+    if 500 <= status < 600:
+        raise TONAPIServerError(status=status, message=message)
+
+    raise TONAPIError(f"HTTP {status}: {message}")

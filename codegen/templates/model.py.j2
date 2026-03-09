@@ -1,0 +1,37 @@
+# This file is auto-generated. Do not edit manually.
+
+from __future__ import annotations
+
+import typing as t
+{% if needs_pydantic %}
+from pydantic import {{ pydantic_imports | sort | join(', ') }}
+{% endif %}
+{% if enum_imports %}
+from pytonapi.rest.models._enums import {{ enum_imports | sort | join(', ') }}
+{% endif %}
+{% if type_checking_imports %}
+
+if t.TYPE_CHECKING:
+{% for mod, names in type_checking_imports %}
+    from pytonapi.rest.models.{{ mod }} import {{ names | sort | join(', ') }}
+{% endfor %}
+{% endif %}
+{% for item in definitions %}
+
+{% if item.kind == 'alias' %}
+{{ item.name }} = {{ item.type_str }}
+{% elif item.kind == 'model' %}
+class {{ item.name }}(BaseModel):
+{% if not item.fields %}
+    pass
+{% else %}
+{% for field in item.fields %}
+    {{ field }}
+{% endfor %}
+{% if item.has_alias %}
+
+    model_config = ConfigDict(populate_by_name=True)
+{% endif %}
+{% endif %}
+{% endif %}
+{% endfor %}

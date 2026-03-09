@@ -1,0 +1,19 @@
+# This file is auto-generated. Do not edit manually.
+{% if enum_names %}
+
+from pytonapi.rest.models._enums import {{ enum_names | sort | join(', ') }}
+{% endif %}
+{% for module, names in module_imports %}
+from pytonapi.rest.models.{{ module }} import {{ names | join(', ') }}
+{% endfor %}
+
+# Rebuild models that use forward references from TYPE_CHECKING imports
+_models_to_rebuild = [
+{% for name in rebuild_models %}
+    {{ name }},
+{% endfor %}
+]
+for _model in _models_to_rebuild:
+    _model.model_rebuild()  # type: ignore[attr-defined]
+
+__all__ = [{{ all_names | join(', ') }}]

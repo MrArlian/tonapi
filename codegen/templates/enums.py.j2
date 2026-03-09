@@ -1,0 +1,11 @@
+# This file is auto-generated. Do not edit manually.
+
+from enum import Enum
+
+{% for enum in enums %}
+
+class {{ enum.name }}(str, Enum):
+{% for member, value in enum.members %}
+    {{ member }} = "{{ value }}"
+{% endfor %}
+{% endfor %}

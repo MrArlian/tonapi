@@ -1,0 +1,7 @@
+# This file is auto-generated. Do not edit manually.
+
+{% for module, class_name in modules %}
+from pytonapi.rest.resources.{{ module }} import {{ class_name }}
+{% endfor %}
+
+__all__ = [{{ all_names | join(', ') }}]

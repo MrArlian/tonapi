@@ -1,0 +1,40 @@
+# This file is auto-generated. Do not edit manually.
+
+from __future__ import annotations
+
+import typing as t
+
+from pydantic import BaseModel, ConfigDict, Field
+
+if t.TYPE_CHECKING:
+    from pytonapi.rest.models.wallet import MessageConsequences
+
+
+class GaslessConfig(BaseModel):
+    relay_address: str
+    gas_jettons: t.List[t.Any]
+
+
+class GaslessTx(BaseModel):
+    protocol_name: str
+
+
+class SignRawMessage(BaseModel):
+    address: str
+    amount: str
+    payload: t.Optional[str] = Field(default=None)
+    state_init: t.Optional[str] = Field(alias="stateInit", default=None)
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class SignRawParams(BaseModel):
+    protocol_name: str
+    relay_address: str
+    commission: str
+    from_: str = Field(alias="from")
+    valid_until: int
+    messages: t.List[SignRawMessage]
+    emulation: t.Optional[MessageConsequences] = Field(default=None)
+
+    model_config = ConfigDict(populate_by_name=True)

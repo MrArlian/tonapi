@@ -1,0 +1,72 @@
+# This file is auto-generated. Do not edit manually.
+{% if model_imports %}
+
+from pytonapi.rest.models import {{ model_imports | sort | join(', ') }}
+{% endif %}
+from tests.conftest import TestTonapiRest
+from tests.rest.fixtures import params
+
+
+class Test{{ class_name }}(TestTonapiRest):
+{% if not has_active %}
+    pass
+    {% endif %}
+    {% for method in methods %}
+    {% if method.skipped %}
+    {% if method.call_args or method.has_body %}
+
+    # async def test_{{ method.name }}(self):
+    #     p = params("{{ module_name }}.{{ method.name }}")
+    #     response = await self.tonapi.{{ module_name }}.{{ method.name }}(
+    {% for arg_name, _ in method.call_args %}
+    #         p["{{ arg_name }}"],
+    {% endfor %}
+    {% if method.has_body %}
+    #         body=p["body"],
+    {% endif %}
+    #     )
+    {% if method.response_type %}
+    #     self.assertIsInstance(response, {{ method.response_type }})
+    {% else %}
+    #     self.assertIsNone(response)
+    {% endif %}
+    {% else %}
+
+    # async def test_{{ method.name }}(self):
+    #     response = await self.tonapi.{{ module_name }}.{{ method.name }}()
+    {% if method.response_type %}
+    #     self.assertIsInstance(response, {{ method.response_type }})
+    {% else %}
+    #     self.assertIsNone(response)
+    {% endif %}
+    {% endif %}
+    {% elif method.call_args or method.has_body %}
+
+    async def test_{{ method.name }}(self):
+        p = params("{{ module_name }}.{{ method.name }}")
+        response = await self.tonapi.{{ module_name }}.{{ method.name }}(
+                                                       {% for arg_name, _ in method.call_args %}
+                                                       p["{{ arg_name }}"],
+                                                       {% endfor %}
+                                                       {% if method.has_body %}
+                                                       body=p["body"],
+                                                       {% endif %}
+                                                       )
+        {% if method.response_type %}
+        self.assertIsInstance(response, {{ method.response_type }})
+        {% else %}
+        self.assertIsNone(response)
+
+    {% endif %}
+    {% else %}
+
+    async def test_{{ method.name }}(self):
+        response = await self.tonapi.{{ module_name }}.{{ method.name }}()
+        {% if method.response_type %}
+        self.assertIsInstance(response, {{ method.response_type }})
+        {% else %}
+        self.assertIsNone(response)
+
+{% endif %}
+{% endif %}
+{% endfor %}

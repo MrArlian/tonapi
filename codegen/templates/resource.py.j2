@@ -1,0 +1,17 @@
+# This file is auto-generated. Do not edit manually.
+
+from __future__ import annotations
+
+import typing as t
+
+from pytonapi.rest.resources._base import BaseResource
+{% if model_imports %}
+from pytonapi.rest.models import {{ model_imports | sort | join(', ') }}
+{% endif %}
+
+
+class {{ class_name }}(BaseResource):
+{% for method in methods %}
+
+{{ method.code }}
+{% endfor %}

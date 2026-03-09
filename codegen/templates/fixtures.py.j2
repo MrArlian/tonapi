@@ -1,0 +1,29 @@
+# Auto-generated structure. Fill in the blank values with real test data.
+import typing as t
+
+TEST_DATA: t.Dict[str, t.Dict[str, object]] = {
+{% for key, params, skipped in entries %}
+{% if skipped %}
+    # "{{ key }}": {
+{% for name, value in params %}
+    #     "{{ name }}": {{ value }},
+{% endfor %}
+    # },
+{% else %}
+    "{{ key }}": {
+{% for name, value in params %}
+        "{{ name }}": {{ value }},
+{% endfor %}
+    },
+{% endif %}
+{% endfor %}
+}
+
+
+def params(method: str) -> t.Dict[str, object]:
+    """Return test parameters for a given method.
+
+    :param method: method key in ``"module.method_name"`` format.
+    :return: dict of parameter names to values.
+    """
+    return TEST_DATA[method]

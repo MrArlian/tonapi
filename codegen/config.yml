@@ -1,0 +1,37 @@
+# Configuration for code generation.
+
+# OpenAPI spec source: URL or local file path.
+# Default: https://tonapi.io/v2/openapi.yml
+spec_source: https://tonapi.io/v2/openapi.yml
+
+# Generate test scaffold files.
+with_tests: true
+
+# Custom method name overrides.
+# Format: operationId: custom_method_name
+method_names:
+  execGetMethodForBlockchainAccount: execute_get_method
+  execGetMethodWithBodyForBlockchainAccount: execute_get_method_with_body
+
+# Operations to exclude from test generation (by operationId).
+# These will not appear in test files or fixtures.
+skip_tests:
+  - sendBlockchainMessage
+  - getLibraryByHash
+  - tonConnectProof
+  - emulateMessageToEvent
+  - emulateMessageToTrace
+  - emulateMessageToWallet
+  - emulateMessageToAccountEvent
+  - gaslessEstimate
+  - gaslessSend
+  - getRawBlockchainBlockState
+  - getRawTransactions
+  - sendRawMessage
+  - getJettonTransferPayload
+  - getAccountNominatorsPools
+  - getStakingPoolInfo
+  - getStakingPoolHistory
+  - getStakingPools
+  - getMultisigAccount
+  - getMultisigOrder

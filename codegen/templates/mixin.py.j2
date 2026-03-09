@@ -1,0 +1,26 @@
+# This file is auto-generated. Do not edit manually.
+
+from __future__ import annotations
+
+import typing as t
+{% for module, class_name in modules %}
+from pytonapi.rest.resources.{{ module }} import {{ class_name }}
+{% endfor %}
+
+if t.TYPE_CHECKING:
+    from pytonapi.rest.client import TonapiRestClient
+
+
+class ResourcesMixin:
+    """Mixin that exposes all API resources as properties."""
+
+    def __init__(self, client: TonapiRestClient) -> None:
+        self._client = client
+
+    {% for module, class_name in modules %}
+
+    @property
+    def {{ module }}(self) -> {{ class_name }}:
+        return {{ class_name }}(self._client)
+
+{% endfor %}

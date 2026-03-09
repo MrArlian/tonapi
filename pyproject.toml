@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytonapi"
+description = "Python SDK for TONAPI — REST API, streaming, and webhooks for TON blockchain."
+requires-python = ">=3.10,<3.15"
+authors = [
+    { name = "nessshon" },
+]
+maintainers = [
+    { name = "nessshon" },
+]
+dependencies = [
+    "aiohttp>=3.9.0",
+    "pydantic>=2.4.1,<3.0",
+]
+keywords = [
+    "AsyncIO",
+    "REST API",
+    "SDK",
+    "TON",
+    "TON blockchain",
+    "TONAPI",
+    "The Open Network",
+    "blockchain",
+    "crypto",
+    "streaming",
+    "webhooks",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dynamic = ["version"]
+readme = "README.md"
+license = "MIT"
+
+[project.scripts]
+pytonapi = "pytonapi.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/nessshon/pytonapi/"
+Examples = "https://github.com/nessshon/pytonapi/tree/main/examples/"
+
+[tool.setuptools.packages.find]
+include = ["pytonapi", "pytonapi.*"]
+
+[tool.setuptools.package-data]
+pytonapi = ["py.typed"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pytonapi.__init__.__version__" }
+
+[tool.mypy]
+python_version = "3.10"
+follow_imports = "skip"
+ignore_missing_imports = true
