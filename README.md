@@ -59,10 +59,6 @@ pip install pytonapi
 - [Transfer TON](examples/transfer_ton.py)
 - [Gasless transfer](examples/transfer_gasless.py)
 
-## Support
-
-Supported by [TON Society](https://github.com/ton-society/grants-and-bounties) and [TONAPI](https://tonapi.io).
-
 ## License
 
 This repository is distributed under the [MIT License](LICENSE).
