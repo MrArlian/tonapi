@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT License found in the
 # LICENSE file in the root directory of this source tree.
 
-
 __all__ = [
+    "__author__",
     "__uri__",
     "__version__",
 ]
 
+__author__ = "nessshon"
 __version__ = "2.0.0"
 __uri__ = "https://github.com/nessshon/pytonapi"
