@@ -3,7 +3,7 @@
 [![TON](https://img.shields.io/badge/TON-grey?logo=TON&logoColor=40AEF0)](https://ton.org)
 ![Python Versions](https://img.shields.io/badge/Python-3.10%20--%203.14-black?color=FFE873&labelColor=3776AB)
 [![PyPI](https://img.shields.io/pypi/v/pytonapi.svg?color=FFE873&labelColor=3776AB)](https://pypi.python.org/pypi/pytonapi)
-[![License](https://img.shields.io/github/license/nessshon/tonapi)](https://github.com/nessshon/tonapi/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/nessshon/tonapi)](LICENSE)
 [![Donate](https://img.shields.io/badge/Donate-TON-blue)](https://tonviewer.com/UQCZq3_Vd21-4y4m7Wc-ej9NFOhh_qvdfAkAYAOHoQ__Ness)
 
 ![Image](assets/banner.png)
@@ -14,8 +14,8 @@
 
 ### Python SDK for [TONAPI](https://tonapi.io)
 
-Providing access to TON blockchain data via REST API, real-time streaming, and webhooks.  
-An API key is required and can be obtained at [tonconsole.com](https://tonconsole.com/). Documentation available
+Access TON blockchain data via REST API, real-time streaming, and webhooks.
+API key required — obtain at [tonconsole.com](https://tonconsole.com/), docs
 at [docs.tonconsole.com](https://docs.tonconsole.com/).
 
 > For creating wallets, transferring TON, jettons, etc., use [tonutils](https://github.com/nessshon/tonutils).
@@ -26,8 +26,8 @@ at [docs.tonconsole.com](https://docs.tonconsole.com/).
 - **Streaming** — real-time events via SSE and WebSocket
 - **Webhooks** — push notifications with event dispatcher
 
-> If this project has been useful to you, consider supporting its development.  
-> **TON**: `UQCZq3_Vd21-4y4m7Wc-ej9NFOhh_qvdfAkAYAOHoQ__Ness`
+> Support this project — TON: `donate.ness.ton`  
+> `UQCZq3_Vd21-4y4m7Wc-ej9NFOhh_qvdfAkAYAOHoQ__Ness`
 
 ## Installation
 
