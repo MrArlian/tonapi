@@ -9,6 +9,8 @@ __all__ = [
     "BaseResource",
 ]
 
+_T = t.TypeVar("_T")
+
 
 class BaseResource:
     """Base class for all API resource groups."""
@@ -16,25 +18,49 @@ class BaseResource:
     def __init__(self, client: TonapiRestClient) -> None:
         self._client = client
 
+    @t.overload
     async def _request(
         self,
         method: str,
         path: str,
         *,
-        params: t.Optional[t.Dict[str, t.Any]] = None,
-        body: t.Optional[t.Any] = None,
-        headers: t.Optional[t.Dict[str, t.Any]] = None,
-        response_model: t.Optional[t.Type[t.Any]] = None,
-    ) -> t.Any:
+        params: dict[str, t.Any] | None = None,
+        body: t.Any | None = None,
+        headers: dict[str, t.Any] | None = None,
+        response_model: type[_T],
+    ) -> _T: ...
+
+    @t.overload
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, t.Any] | None = None,
+        body: t.Any | None = None,
+        headers: dict[str, t.Any] | None = None,
+        response_model: None = None,
+    ) -> t.Any: ...
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, t.Any] | None = None,
+        body: t.Any | None = None,
+        headers: dict[str, t.Any] | None = None,
+        response_model: type[_T] | None = None,
+    ) -> _T | t.Any:
         """Delegate an HTTP request to the underlying client.
 
         :param method: HTTP method.
         :param path: API path.
-        :param params: Query parameters.
+        :param params: query parameters.
         :param body: JSON request body.
-        :param headers: Additional request headers.
+        :param headers: additional request headers.
         :param response_model: Pydantic model to parse the response.
-        :return: Parsed model instance, raw dict, or ``None``.
+        :return: parsed model instance, raw dict, or ``None``.
         """
         return await self._client.request(
             method,

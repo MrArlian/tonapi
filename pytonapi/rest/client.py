@@ -27,14 +27,14 @@ class TonapiRestClient(BaseClient, ResourcesMixin):
         api_key: str,
         network: Network,
         *,
-        base_url: t.Optional[str] = None,
+        base_url: str | None = None,
         timeout: float = 10.0,
-        session: t.Optional[aiohttp.ClientSession] = None,
-        headers: t.Optional[t.Dict[str, str]] = None,
-        cookies: t.Optional[t.Dict[str, str]] = None,
+        session: aiohttp.ClientSession | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
         rps_limit: int = 0,
         rps_period: float = 1.0,
-        retry_policy: t.Optional[RetryPolicy] = DEFAULT_RETRY_POLICY,
+        retry_policy: RetryPolicy | None = DEFAULT_RETRY_POLICY,
     ) -> None:
         """Initialize the TONAPI client.
 
@@ -60,7 +60,7 @@ class TonapiRestClient(BaseClient, ResourcesMixin):
             cookies=cookies,
             retry_policy=retry_policy,
         )
-        self._rate_limiter: t.Optional[RateLimiter] = (
+        self._rate_limiter: RateLimiter | None = (
             RateLimiter(rps=rps_limit, period=rps_period) if rps_limit > 0 else None
         )
         ResourcesMixin.__init__(self, self)
@@ -70,10 +70,10 @@ class TonapiRestClient(BaseClient, ResourcesMixin):
         method: str,
         path: str,
         *,
-        params: t.Optional[t.Dict[str, t.Any]] = None,
-        body: t.Optional[t.Any] = None,
-        headers: t.Optional[t.Dict[str, t.Any]] = None,
-        response_model: t.Optional[t.Type[T]] = None,
+        params: dict[str, t.Any] | None = None,
+        body: t.Any | None = None,
+        headers: dict[str, t.Any] | None = None,
+        response_model: type[T] | None = None,
     ) -> t.Any:
         """Execute an HTTP request with retry and rate limiting.
 

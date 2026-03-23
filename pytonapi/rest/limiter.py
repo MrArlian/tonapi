@@ -1,6 +1,5 @@
 import asyncio
 import time
-import typing as t
 
 
 class RateLimiter:
@@ -13,7 +12,7 @@ class RateLimiter:
     def __init__(self, rps: int, period: float = 1.0) -> None:
         self._rps = rps
         self._period = period
-        self._timestamps: t.List[float] = []
+        self._timestamps: list[float] = []
         self._lock = asyncio.Lock()
 
     async def acquire(self) -> None:
