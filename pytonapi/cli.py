@@ -1,6 +1,6 @@
 import argparse
 
-from pytonapi import __version__
+from pytonapi.__meta__ import __version__
 
 
 def main() -> None:
@@ -16,7 +16,6 @@ def main() -> None:
         version=f"pytonapi {__version__}",
     )
     parser.parse_args()
-    parser.print_help()
 
 
 if __name__ == "__main__":
