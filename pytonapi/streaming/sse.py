@@ -47,9 +47,9 @@ class TonapiSSE:
 
     async def subscribe_transactions(
         self,
-        accounts: t.Optional[t.List[str]] = None,
-        operations: t.Optional[t.List[str]] = None,
-        stop: t.Optional[asyncio.Event] = None,
+        accounts: list[str] | None = None,
+        operations: list[str] | None = None,
+        stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[TransactionEvent]:
         """Subscribe to finalized account transactions.
 
@@ -58,7 +58,7 @@ class TonapiSSE:
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of ``TransactionEvent``.
         """
-        params: t.Dict[str, str] = {
+        params: dict[str, str] = {
             "accounts": ",".join(accounts) if accounts else "ALL",
         }
         if operations:
@@ -69,8 +69,8 @@ class TonapiSSE:
 
     async def subscribe_blocks(
         self,
-        workchain: t.Optional[Workchain] = None,
-        stop: t.Optional[asyncio.Event] = None,
+        workchain: Workchain | None = None,
+        stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[BlockEvent]:
         """Subscribe to new block notifications.
 
@@ -78,7 +78,7 @@ class TonapiSSE:
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of ``BlockEvent``.
         """
-        params: t.Dict[str, str] = {}
+        params: dict[str, str] = {}
         if workchain is not None:
             params["workchain"] = str(int(workchain))
 
@@ -87,8 +87,8 @@ class TonapiSSE:
 
     async def subscribe_traces(
         self,
-        accounts: t.Optional[t.List[str]] = None,
-        stop: t.Optional[asyncio.Event] = None,
+        accounts: list[str] | None = None,
+        stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[TraceEvent]:
         """Subscribe to completed trace notifications.
 
@@ -96,7 +96,7 @@ class TonapiSSE:
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of ``TraceEvent``.
         """
-        params: t.Dict[str, str] = {
+        params: dict[str, str] = {
             "accounts": ",".join(accounts) if accounts else "ALL",
         }
         async for data in self._stream("/v2/sse/accounts/traces", params, stop):
@@ -104,8 +104,8 @@ class TonapiSSE:
 
     async def subscribe_mempool(
         self,
-        accounts: t.Optional[t.List[str]] = None,
-        stop: t.Optional[asyncio.Event] = None,
+        accounts: list[str] | None = None,
+        stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[MempoolEvent]:
         """Subscribe to pending inbound messages.
 
@@ -113,7 +113,7 @@ class TonapiSSE:
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of ``MempoolEvent``.
         """
-        params: t.Dict[str, str] = {}
+        params: dict[str, str] = {}
         if accounts:
             params["accounts"] = ",".join(accounts)
 
@@ -123,9 +123,9 @@ class TonapiSSE:
     async def _stream(
         self,
         path: str,
-        params: t.Dict[str, str],
-        stop: t.Optional[asyncio.Event] = None,
-    ) -> t.AsyncIterator[t.Dict[str, t.Any]]:
+        params: dict[str, str],
+        stop: asyncio.Event | None = None,
+    ) -> t.AsyncIterator[dict[str, t.Any]]:
         """Open an SSE stream with automatic reconnection.
 
         :param path: API path.
@@ -154,10 +154,10 @@ class TonapiSSE:
                     if stop and stop.is_set():
                         return
 
-            except (TONAPIError,) as exc:
+            except TONAPIError as exc:
                 if not isinstance(exc, STREAMING_RECOVERABLE):
                     raise
-            except (Exception,):
+            except Exception:
                 pass
 
             if stop and stop.is_set():
@@ -177,8 +177,8 @@ class TonapiSSE:
     async def _read_events(
         cls,
         response: aiohttp.ClientResponse,
-        stop: t.Optional[asyncio.Event] = None,
-    ) -> t.AsyncIterator[t.Dict[str, t.Any]]:
+        stop: asyncio.Event | None = None,
+    ) -> t.AsyncIterator[dict[str, t.Any]]:
         """Parse SSE text/event-stream into JSON data dicts.
 
         :param response: Aiohttp response with ``text/event-stream`` body.
@@ -199,7 +199,7 @@ class TonapiSSE:
                 if event_type == "message" and data_buf:
                     try:
                         parsed = json.loads(data_buf)
-                    except (json.JSONDecodeError,) as exc:
+                    except json.JSONDecodeError as exc:
                         raise TONAPIStreamingError(
                             f"Invalid SSE JSON: {data_buf}",
                         ) from exc
@@ -235,8 +235,8 @@ async def _read_lines(
                 response.content.read(4096),
                 timeout=timeout,
             )
-        except (asyncio.TimeoutError,):
-            raise TONAPIStreamingError("SSE heartbeat timeout")
+        except asyncio.TimeoutError as err:
+            raise TONAPIStreamingError("SSE heartbeat timeout") from err
 
         if not chunk:
             break

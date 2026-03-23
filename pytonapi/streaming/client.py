@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from pytonapi.client import BaseClient
+from pytonapi.exceptions import TONAPISessionNotCreatedError
 from pytonapi.streaming.sse import TonapiSSE
 from pytonapi.streaming.ws import TonapiWebSocket
 from pytonapi.types import (
@@ -21,9 +22,9 @@ class TonapiStreaming(BaseClient):
         api_key: str,
         network: Network,
         *,
-        base_url: t.Optional[str] = None,
-        headers: t.Optional[t.Dict[str, str]] = None,
-        reconnect_policy: t.Optional[ReconnectPolicy] = None,
+        base_url: str | None = None,
+        headers: dict[str, str] | None = None,
+        reconnect_policy: ReconnectPolicy | None = None,
     ) -> None:
         """Initialize the streaming client.
 
@@ -41,8 +42,8 @@ class TonapiStreaming(BaseClient):
             timeout=0.0,
         )
         self._reconnect_policy = reconnect_policy or DEFAULT_RECONNECT_POLICY
-        self._sse: t.Optional[TonapiSSE] = None
-        self._ws: t.Optional[TonapiWebSocket] = None
+        self._sse: TonapiSSE | None = None
+        self._ws: TonapiWebSocket | None = None
 
     @property
     def sse(self) -> TonapiSSE:
@@ -51,6 +52,8 @@ class TonapiStreaming(BaseClient):
         :return: ``TonapiSSE`` instance.
         """
         if self._sse is None:
+            if self._session is None:
+                raise TONAPISessionNotCreatedError("TonapiStreaming")
             self._sse = TonapiSSE(
                 base_url=self._base_url,
                 session=self._session,
@@ -65,6 +68,8 @@ class TonapiStreaming(BaseClient):
         :return: ``TonapiWebSocket`` instance.
         """
         if self._ws is None:
+            if self._session is None:
+                raise TONAPISessionNotCreatedError("TonapiStreaming")
             self._ws = TonapiWebSocket(
                 base_url=self._base_url,
                 session=self._session,
@@ -79,9 +84,9 @@ class TonapiStreaming(BaseClient):
 
     async def __aexit__(
         self,
-        exc_type: t.Optional[t.Type[BaseException]],
-        exc_val: t.Optional[BaseException],
-        exc_tb: t.Optional[t.Any],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: t.Any | None,
     ) -> None:
         """Exit the async context manager."""
         self._sse = None

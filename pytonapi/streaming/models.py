@@ -1,4 +1,3 @@
-import typing as t
 
 from pydantic import BaseModel, Field
 
@@ -24,7 +23,7 @@ class TransactionEvent(BaseModel):
 class TraceEvent(BaseModel):
     """Completed trace notification."""
 
-    accounts: t.List[str]
+    accounts: list[str]
     hash: str
 
 
@@ -32,4 +31,4 @@ class MempoolEvent(BaseModel):
     """Pending inbound message notification."""
 
     boc: str
-    involved_accounts: t.Optional[t.List[str]] = Field(default=None)
+    involved_accounts: list[str] | None = Field(default=None)

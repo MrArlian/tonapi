@@ -27,7 +27,7 @@ from pytonapi.types import (
 class TonapiWebSocket:
     """WebSocket streaming transport for TONAPI."""
 
-    _METHOD_MAP: t.Final[t.Dict[str, str]] = {
+    _METHOD_MAP: t.Final[dict[str, str]] = {
         "subscribe_block": "block",
         "subscribe_account": "account_transaction",
         "subscribe_trace": "trace",
@@ -53,9 +53,9 @@ class TonapiWebSocket:
 
     async def subscribe_transactions(
         self,
-        accounts: t.Optional[t.List[str]] = None,
-        operations: t.Optional[t.List[str]] = None,
-        stop: t.Optional[asyncio.Event] = None,
+        accounts: list[str] | None = None,
+        operations: list[str] | None = None,
+        stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[TransactionEvent]:
         """Subscribe to finalized account transactions.
 
@@ -64,7 +64,7 @@ class TonapiWebSocket:
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of ``TransactionEvent``.
         """
-        params: t.List[str] = []
+        params: list[str] = []
         if accounts:
             for acc in accounts:
                 if operations:
@@ -79,8 +79,8 @@ class TonapiWebSocket:
 
     async def subscribe_blocks(
         self,
-        workchain: t.Optional[Workchain] = None,
-        stop: t.Optional[asyncio.Event] = None,
+        workchain: Workchain | None = None,
+        stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[BlockEvent]:
         """Subscribe to new block notifications.
 
@@ -88,7 +88,7 @@ class TonapiWebSocket:
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of ``BlockEvent``.
         """
-        params: t.List[str] = []
+        params: list[str] = []
         if workchain is not None:
             params.append(f"workchain={int(workchain)}")
 
@@ -97,8 +97,8 @@ class TonapiWebSocket:
 
     async def subscribe_traces(
         self,
-        accounts: t.Optional[t.List[str]] = None,
-        stop: t.Optional[asyncio.Event] = None,
+        accounts: list[str] | None = None,
+        stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[TraceEvent]:
         """Subscribe to completed trace notifications.
 
@@ -106,7 +106,7 @@ class TonapiWebSocket:
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of ``TraceEvent``.
         """
-        params: t.List[str] = []
+        params: list[str] = []
         if accounts:
             params.extend(accounts)
         else:
@@ -117,8 +117,8 @@ class TonapiWebSocket:
 
     async def subscribe_mempool(
         self,
-        accounts: t.Optional[t.List[str]] = None,
-        stop: t.Optional[asyncio.Event] = None,
+        accounts: list[str] | None = None,
+        stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[MempoolEvent]:
         """Subscribe to pending inbound messages.
 
@@ -126,7 +126,7 @@ class TonapiWebSocket:
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of ``MempoolEvent``.
         """
-        params: t.List[str] = []
+        params: list[str] = []
         if accounts:
             params.append(f"accounts={','.join(accounts)}")
 
@@ -136,9 +136,9 @@ class TonapiWebSocket:
     async def _stream(
         self,
         method: str,
-        params: t.List[str],
-        stop: t.Optional[asyncio.Event] = None,
-    ) -> t.AsyncIterator[t.Dict[str, t.Any]]:
+        params: list[str],
+        stop: asyncio.Event | None = None,
+    ) -> t.AsyncIterator[dict[str, t.Any]]:
         """Open a WebSocket connection with automatic reconnection.
 
         :param method: JSON-RPC subscribe method name.
@@ -164,7 +164,7 @@ class TonapiWebSocket:
                                 ws.receive(),
                                 timeout=1.0,
                             )
-                        except (asyncio.TimeoutError,):
+                        except asyncio.TimeoutError:
                             continue
                         if msg.type == aiohttp.WSMsgType.TEXT:
                             data = json.loads(msg.data)
@@ -177,16 +177,16 @@ class TonapiWebSocket:
                         ):
                             break
 
-            except (aiohttp.WSServerHandshakeError,) as exc:
+            except aiohttp.WSServerHandshakeError as exc:
                 raise_for_status(
                     exc.status,
                     exc.message or "",
                     "",
                 )
-            except (TONAPIError,) as exc:
+            except TONAPIError as exc:
                 if not isinstance(exc, STREAMING_RECOVERABLE):
                     raise
-            except (Exception,):
+            except Exception:
                 pass
 
             if stop and stop.is_set():
@@ -206,7 +206,7 @@ class TonapiWebSocket:
     async def _subscribe(
         ws: aiohttp.ClientWebSocketResponse,
         method: str,
-        params: t.List[str],
+        params: list[str],
     ) -> None:
         """Send a JSON-RPC subscribe request and validate the response.
 
@@ -215,7 +215,7 @@ class TonapiWebSocket:
         :param params: JSON-RPC params array.
         :raises TONAPIStreamingError: On subscription failure.
         """
-        request: t.Dict[str, t.Any] = {
+        request: dict[str, t.Any] = {
             "id": 1,
             "jsonrpc": "2.0",
             "method": method,
