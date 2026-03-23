@@ -331,11 +331,7 @@ TEST_DATA: dict[str, dict[str, object]] = {
         "public_key": "79c446597dbf81b9987e9059de95dc557bcd9e2c431a6db1677768783d0b99f7",
     },
     "wallet.get_wallets_by_public_key_bulk": {
-        "body": {
-            "public_keys": [
-                "d8519b83d5b04b17a706ef6d04f3566422be47c2b676b0823235d67b1ef4b1b2"
-            ]
-        },
+        "body": {"public_keys": ["d8519b83d5b04b17a706ef6d04f3566422be47c2b676b0823235d67b1ef4b1b2"]},
     },
     # "wallet.emulate_message_to_wallet": {
     #     "body": {"boc": "", "params": [{"address": "0:97146a46acc2654y27947f14c4a4b14273e954f78bc017790b41208b0043200b", "balance": 10000000000}]},

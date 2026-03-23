@@ -2,11 +2,11 @@ from unittest import IsolatedAsyncioTestCase
 
 from pytonapi.exceptions import TONAPIError
 from pytonapi.webhook import (
-    TonapiWebhookDispatcher,
     AccountTxEvent,
     MempoolMsgEvent,
     NewContractsEvent,
     OpcodeMsgEvent,
+    TonapiWebhookDispatcher,
 )
 
 

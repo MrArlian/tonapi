@@ -65,5 +65,5 @@ class TestTonapiStreaming(IsolatedAsyncioTestCase):
             await asyncio.sleep(seconds)
             event.set()
 
-        asyncio.ensure_future(_set_after())
+        event._task = asyncio.ensure_future(_set_after())  # type: ignore[attr-defined]
         return event

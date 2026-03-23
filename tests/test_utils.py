@@ -1,7 +1,7 @@
 import decimal
 from unittest import TestCase
 
-from pytonapi.utils import raw_to_userfriendly, userfriendly_to_raw, to_nano, to_amount
+from pytonapi.utils import raw_to_userfriendly, to_amount, to_nano, userfriendly_to_raw
 
 USERFRIENDLY_ADDRESS = "UQCDrgGaI6gWK-qlyw69xWZosurGxrpRgIgSkVsgahUtxZR0"
 USERFRIENDLY_TEST_ONLY = "0QCDrgGaI6gWK-qlyw69xWZosurGxrpRgIgSkVsgahUtxS_-"

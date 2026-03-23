@@ -1,13 +1,6 @@
 # This file is auto-generated. Do not edit manually.
 
-from pytonapi.rest.models import (
-    AccountEvents,
-    NftCollection,
-    NftCollections,
-    NftItem,
-    NftItems,
-    NftOperations,
-)
+from pytonapi.rest.models import AccountEvents, NftCollection, NftCollections, NftItem, NftItems, NftOperations
 from tests.conftest import TestTonapiRest
 from tests.rest.fixtures import params
 
