@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 from pydantic import BaseModel, Field
 
 from pytonapi.rest.models._enums import PoolImplementationType
@@ -18,7 +16,7 @@ class AccountStakingInfo(BaseModel):
 
 
 class AccountStaking(BaseModel):
-    pools: t.List[AccountStakingInfo]
+    pools: list[AccountStakingInfo]
 
 
 class ApyHistory(BaseModel):
@@ -30,7 +28,7 @@ class PoolImplementation(BaseModel):
     name: str
     description: str
     url: str
-    socials: t.List[str]
+    socials: list[str]
 
 
 class PoolInfo(BaseModel):
@@ -47,5 +45,5 @@ class PoolInfo(BaseModel):
     max_nominators: int
     nominators_stake: int
     validator_stake: int
-    liquid_jetton_master: t.Optional[str] = Field(default=None)
-    cycle_length: t.Optional[int] = Field(default=None)
+    liquid_jetton_master: str | None = Field(default=None)
+    cycle_length: int | None = Field(default=None)

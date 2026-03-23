@@ -20,14 +20,8 @@ class Auction(BaseModel):
 
 
 class Auctions(BaseModel):
-    data: t.List[Auction]
+    data: list[Auction]
     total: int
-
-
-class PictureDNS(BaseModel):
-    type: str
-    url: t.Optional[str] = Field(default=None)
-    bag_id: t.Optional[str] = Field(default=None)
 
 
 class WalletDNS(BaseModel):
@@ -36,15 +30,21 @@ class WalletDNS(BaseModel):
     is_wallet: bool
     has_method_pubkey: bool
     has_method_seqno: bool
-    names: t.List[str]
+    names: list[str]
+
+
+class PictureDNS(BaseModel):
+    type: str
+    url: str | None = Field(default=None)
+    bag_id: str | None = Field(default=None)
 
 
 class DnsRecord(BaseModel):
-    sites: t.List[str]
-    wallet: t.Optional[WalletDNS] = Field(default=None)
-    next_resolver: t.Optional[str] = Field(default=None)
-    storage: t.Optional[str] = Field(default=None)
-    picture: t.Optional[PictureDNS] = Field(default=None)
+    sites: list[str]
+    wallet: WalletDNS | None = Field(default=None)
+    next_resolver: str | None = Field(default=None)
+    storage: str | None = Field(default=None)
+    picture: PictureDNS | None = Field(default=None)
 
 
 class DomainBid(BaseModel):
@@ -58,10 +58,10 @@ class DomainBid(BaseModel):
 
 
 class DomainBids(BaseModel):
-    data: t.List[DomainBid]
+    data: list[DomainBid]
 
 
 class DomainInfo(BaseModel):
     name: str
-    expiring_at: t.Optional[int] = Field(default=None)
-    item: t.Optional[NftItem] = Field(default=None)
+    expiring_at: int | None = Field(default=None)
+    item: NftItem | None = Field(default=None)

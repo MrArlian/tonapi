@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing as t
-
 from pydantic import BaseModel, Field
 
-ChartPoints = t.List[t.List[float]]
+ChartPoints = list[list[float]]
 
 
 class MarketTonRates(BaseModel):
@@ -16,7 +14,7 @@ class MarketTonRates(BaseModel):
 
 
 class TokenRates(BaseModel):
-    prices: t.Optional[t.Dict[str, float]] = Field(default=None)
-    diff_24h: t.Optional[t.Dict[str, str]] = Field(default=None)
-    diff_7d: t.Optional[t.Dict[str, str]] = Field(default=None)
-    diff_30d: t.Optional[t.Dict[str, str]] = Field(default=None)
+    prices: dict[str, float] | None = Field(default=None)
+    diff_24h: dict[str, str] | None = Field(default=None)
+    diff_7d: dict[str, str] | None = Field(default=None)
+    diff_30d: dict[str, str] | None = Field(default=None)

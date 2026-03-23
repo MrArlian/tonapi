@@ -13,7 +13,7 @@ if t.TYPE_CHECKING:
 
 
 class JettonHolders(BaseModel):
-    addresses: t.List[t.Any]
+    addresses: list[t.Any]
     total: int
 
 
@@ -27,12 +27,12 @@ class JettonMetadata(BaseModel):
     name: str
     symbol: str
     decimals: str
-    image: t.Optional[str] = Field(default=None)
-    description: t.Optional[str] = Field(default=None)
-    social: t.Optional[t.List[str]] = Field(default=None)
-    websites: t.Optional[t.List[str]] = Field(default=None)
-    catalogs: t.Optional[t.List[str]] = Field(default=None)
-    custom_payload_api_uri: t.Optional[str] = Field(default=None)
+    image: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    social: list[str] | None = Field(default=None)
+    websites: list[str] | None = Field(default=None)
+    catalogs: list[str] | None = Field(default=None)
+    custom_payload_api_uri: str | None = Field(default=None)
 
 
 class JettonInfo(BaseModel):
@@ -42,14 +42,19 @@ class JettonInfo(BaseModel):
     preview: str
     verification: JettonVerificationType
     holders_count: int
-    admin: t.Optional[AccountAddress] = Field(default=None)
-    scaled_ui: t.Optional[ScaledUI] = Field(default=None)
+    admin: AccountAddress | None = Field(default=None)
+    scaled_ui: ScaledUI | None = Field(default=None)
+    code_hash: str | None = Field(default=None)
+    data_hash: str | None = Field(default=None)
+    last_transaction_lt: str | None = Field(default=None)
+    name: str | None = Field(default=None)
+    interfaces: list[str] | None = Field(default=None)
 
 
 class JettonTransferPayload(BaseModel):
-    custom_payload: t.Optional[str] = Field(default=None)
-    state_init: t.Optional[str] = Field(default=None)
+    custom_payload: str | None = Field(default=None)
+    state_init: str | None = Field(default=None)
 
 
 class Jettons(BaseModel):
-    jettons: t.List[JettonInfo]
+    jettons: list[JettonInfo]

@@ -47,6 +47,7 @@ from pytonapi.rest.models.accounts import (
     JettonSwapAction,
     JettonTransferAction,
     LiquidityDepositAction,
+    Metadata,
     Multisigs,
     NftItemTransferAction,
     NftPurchaseAction,
@@ -127,12 +128,7 @@ from pytonapi.rest.models.dns import (
 from pytonapi.rest.models.emulation import DecodedMessage, DecodedRawMessage
 from pytonapi.rest.models.events import Event, ValueFlow
 from pytonapi.rest.models.extra_currency import EcPreview
-from pytonapi.rest.models.gasless import (
-    GaslessConfig,
-    GaslessTx,
-    SignRawMessage,
-    SignRawParams,
-)
+from pytonapi.rest.models.gasless import GaslessConfig, GaslessTx, SignRawMessage, SignRawParams
 from pytonapi.rest.models.jettons import (
     JettonHolders,
     JettonInfo,
@@ -152,17 +148,12 @@ from pytonapi.rest.models.nft import (
     NftItems,
     NftOperation,
     NftOperations,
+    Price,
     Sale,
 )
-from pytonapi.rest.models.purchases import AccountPurchases, Metadata, Price, Purchase
+from pytonapi.rest.models.purchases import AccountPurchases, Purchase
 from pytonapi.rest.models.rates import ChartPoints, MarketTonRates, TokenRates
-from pytonapi.rest.models.staking import (
-    AccountStaking,
-    AccountStakingInfo,
-    ApyHistory,
-    PoolImplementation,
-    PoolInfo,
-)
+from pytonapi.rest.models.staking import AccountStaking, AccountStakingInfo, ApyHistory, PoolImplementation, PoolInfo
 from pytonapi.rest.models.storage import StorageProvider
 from pytonapi.rest.models.traces import Trace
 from pytonapi.rest.models.utilities import ServiceStatus
@@ -213,6 +204,7 @@ _models_to_rebuild = [
     JettonTransferAction,
     JettonsBalances,
     LiquidityDepositAction,
+    Metadata,
     Multisigs,
     NftItemTransferAction,
     NftPurchaseAction,
@@ -313,10 +305,9 @@ _models_to_rebuild = [
     NftItems,
     NftOperation,
     NftOperations,
+    Price,
     Sale,
     AccountPurchases,
-    Metadata,
-    Price,
     Purchase,
     MarketTonRates,
     TokenRates,

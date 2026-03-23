@@ -42,26 +42,26 @@ class Wallet(BaseModel):
     is_wallet: bool
     balance: int
     stats: WalletStats
-    plugins: t.List[WalletPlugin]
+    plugins: list[WalletPlugin]
     status: AccountStatus
     last_activity: int
-    get_methods: t.List[str]
+    get_methods: list[str]
     last_lt: int
-    name: t.Optional[str] = Field(default=None)
-    icon: t.Optional[str] = Field(default=None)
-    is_suspended: t.Optional[bool] = Field(default=None)
-    signature_disabled: t.Optional[bool] = Field(default=None)
-    interfaces: t.Optional[t.List[str]] = Field(default=None)
+    name: str | None = Field(default=None)
+    icon: str | None = Field(default=None)
+    is_suspended: bool | None = Field(default=None)
+    signature_disabled: bool | None = Field(default=None)
+    interfaces: list[str] | None = Field(default=None)
 
 
 class Wallets(BaseModel):
-    accounts: t.List[Wallet]
+    accounts: list[Wallet]
 
 
 class WalletsByPublicKey(BaseModel):
     public_key: str
-    wallets: t.List[Wallet]
+    wallets: list[Wallet]
 
 
 class WalletsByPublicKeys(BaseModel):
-    items: t.List[WalletsByPublicKey]
+    items: list[WalletsByPublicKey]

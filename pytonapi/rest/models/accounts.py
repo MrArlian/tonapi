@@ -18,8 +18,7 @@ if t.TYPE_CHECKING:
     from pytonapi.rest.models.extra_currency import EcPreview
     from pytonapi.rest.models.jettons import ScaledUI
     from pytonapi.rest.models.multisig import Multisig
-    from pytonapi.rest.models.nft import NftItem
-    from pytonapi.rest.models.purchases import Metadata, Price
+    from pytonapi.rest.models.nft import NftItem, Price
     from pytonapi.rest.models.rates import TokenRates
 
 
@@ -28,63 +27,24 @@ class Account(BaseModel):
     balance: int
     last_activity: int
     status: AccountStatus
-    get_methods: t.List[str]
+    get_methods: list[str]
     is_wallet: bool
-    extra_balance: t.Optional[t.List[ExtraCurrency]] = Field(default=None)
-    currencies_balance: t.Optional[t.Dict[str, t.Any]] = Field(default=None)
-    interfaces: t.Optional[t.List[str]] = Field(default=None)
-    name: t.Optional[str] = Field(default=None)
-    is_scam: t.Optional[bool] = Field(default=None)
-    icon: t.Optional[str] = Field(default=None)
-    memo_required: t.Optional[bool] = Field(default=None)
-    is_suspended: t.Optional[bool] = Field(default=None)
+    extra_balance: list[ExtraCurrency] | None = Field(default=None)
+    currencies_balance: dict[str, t.Any] | None = Field(default=None)
+    interfaces: list[str] | None = Field(default=None)
+    name: str | None = Field(default=None)
+    is_scam: bool | None = Field(default=None)
+    icon: str | None = Field(default=None)
+    memo_required: bool | None = Field(default=None)
+    is_suspended: bool | None = Field(default=None)
 
 
 class AccountAddress(BaseModel):
     address: str
     is_scam: bool
     is_wallet: bool
-    name: t.Optional[str] = Field(default=None)
-    icon: t.Optional[str] = Field(default=None)
-
-
-class GasRelayAction(BaseModel):
-    amount: int
-    relayer: AccountAddress
-    target: AccountAddress
-
-
-class EncryptedComment(BaseModel):
-    encryption_type: str
-    cipher_text: str
-
-
-class ExtraCurrencyTransferAction(BaseModel):
-    sender: AccountAddress
-    recipient: AccountAddress
-    amount: str
-    currency: EcPreview
-    comment: t.Optional[str] = Field(default=None)
-    encrypted_comment: t.Optional[EncryptedComment] = Field(default=None)
-
-
-class SetSignatureAllowedAction(BaseModel):
-    wallet: AccountAddress
-    allowed: bool
-
-
-class UnSubscriptionAction(BaseModel):
-    subscriber: AccountAddress
-    subscription: str
-    beneficiary: AccountAddress
-    admin: AccountAddress
-
-
-class WithdrawStakeRequestAction(BaseModel):
-    staker: AccountAddress
-    pool: AccountAddress
-    implementation: PoolImplementationType
-    amount: t.Optional[int] = Field(default=None)
+    name: str | None = Field(default=None)
+    icon: str | None = Field(default=None)
 
 
 class JettonPreview(BaseModel):
@@ -95,8 +55,9 @@ class JettonPreview(BaseModel):
     image: str
     verification: JettonVerificationType
     score: int
-    custom_payload_api_uri: t.Optional[str] = Field(default=None)
-    scaled_ui: t.Optional[ScaledUI] = Field(default=None)
+    custom_payload_api_uri: str | None = Field(default=None)
+    scaled_ui: ScaledUI | None = Field(default=None)
+    description: str | None = Field(default=None)
 
 
 class JettonBurnAction(BaseModel):
@@ -106,61 +67,11 @@ class JettonBurnAction(BaseModel):
     jetton: JettonPreview
 
 
-class ContractDeployAction(BaseModel):
-    address: str
-    interfaces: t.List[str]
-
-
-class DomainRenewAction(BaseModel):
-    domain: str
-    contract_address: str
-    renewer: AccountAddress
-
-
-class ActionSimplePreview(BaseModel):
-    name: str
-    description: str
-    accounts: t.List[AccountAddress]
-    action_image: t.Optional[str] = Field(default=None)
-    value: t.Optional[str] = Field(default=None)
-    value_image: t.Optional[str] = Field(default=None)
-
-
-class NftPurchaseAction(BaseModel):
-    auction_type: str
-    amount: Price
-    nft: NftItem
-    seller: AccountAddress
-    buyer: AccountAddress
-
-
-class ElectionsRecoverStakeAction(BaseModel):
-    amount: int
-    staker: AccountAddress
-
-
-class Refund(BaseModel):
-    type: str
-    origin: str
-
-
-class SmartContractAction(BaseModel):
-    executor: AccountAddress
-    contract: AccountAddress
-    ton_attached: int
-    operation: str
-    payload: t.Optional[str] = Field(default=None)
-    refund: t.Optional[Refund] = Field(default=None)
-
-
-class SubscriptionAction(BaseModel):
-    subscriber: AccountAddress
-    subscription: str
-    beneficiary: AccountAddress
-    admin: AccountAddress
-    price: Price
-    initial: bool
-    amount: t.Optional[int] = Field(default=None)
+class JettonMintAction(BaseModel):
+    recipient: AccountAddress
+    recipients_wallet: str
+    amount: str
+    jetton: JettonPreview
 
 
 class WithdrawStakeAction(BaseModel):
@@ -170,41 +81,14 @@ class WithdrawStakeAction(BaseModel):
     implementation: PoolImplementationType
 
 
-class NftItemTransferAction(BaseModel):
-    nft: str
-    sender: t.Optional[AccountAddress] = Field(default=None)
-    recipient: t.Optional[AccountAddress] = Field(default=None)
-    comment: t.Optional[str] = Field(default=None)
-    encrypted_comment: t.Optional[EncryptedComment] = Field(default=None)
-    payload: t.Optional[str] = Field(default=None)
-    refund: t.Optional[Refund] = Field(default=None)
+class Refund(BaseModel):
+    type: str
+    origin: str
 
 
-class DepositStakeAction(BaseModel):
-    amount: int
-    staker: AccountAddress
-    pool: AccountAddress
-    implementation: PoolImplementationType
-
-
-class PurchaseAction(BaseModel):
-    source: AccountAddress
-    destination: AccountAddress
-    invoice_id: str
-    amount: Price
-    metadata: Metadata
-
-
-class JettonTransferAction(BaseModel):
-    senders_wallet: str
-    recipients_wallet: str
-    amount: str
-    jetton: JettonPreview
-    sender: t.Optional[AccountAddress] = Field(default=None)
-    recipient: t.Optional[AccountAddress] = Field(default=None)
-    comment: t.Optional[str] = Field(default=None)
-    encrypted_comment: t.Optional[EncryptedComment] = Field(default=None)
-    refund: t.Optional[Refund] = Field(default=None)
+class EncryptedComment(BaseModel):
+    encryption_type: str
+    cipher_text: str
 
 
 class FlawedJettonTransferAction(BaseModel):
@@ -213,51 +97,45 @@ class FlawedJettonTransferAction(BaseModel):
     sent_amount: str
     received_amount: str
     jetton: JettonPreview
-    sender: t.Optional[AccountAddress] = Field(default=None)
-    recipient: t.Optional[AccountAddress] = Field(default=None)
-    comment: t.Optional[str] = Field(default=None)
-    encrypted_comment: t.Optional[EncryptedComment] = Field(default=None)
-    refund: t.Optional[Refund] = Field(default=None)
+    sender: AccountAddress | None = Field(default=None)
+    recipient: AccountAddress | None = Field(default=None)
+    comment: str | None = Field(default=None)
+    encrypted_comment: EncryptedComment | None = Field(default=None)
+    refund: Refund | None = Field(default=None)
 
 
-class AddExtensionAction(BaseModel):
-    wallet: AccountAddress
-    extension: str
-
-
-class JettonMintAction(BaseModel):
-    recipient: AccountAddress
-    recipients_wallet: str
-    amount: str
-    jetton: JettonPreview
-
-
-class RemoveExtensionAction(BaseModel):
-    wallet: AccountAddress
-    extension: str
-
-
-class JettonSwapAction(BaseModel):
-    dex: str
-    amount_in: str
-    amount_out: str
-    user_wallet: AccountAddress
-    router: AccountAddress
-    ton_in: t.Optional[int] = Field(default=None)
-    ton_out: t.Optional[int] = Field(default=None)
-    jetton_master_in: t.Optional[JettonPreview] = Field(default=None)
-    jetton_master_out: t.Optional[JettonPreview] = Field(default=None)
+class UnSubscriptionAction(BaseModel):
+    subscriber: AccountAddress
+    subscription: str
+    beneficiary: AccountAddress
+    admin: AccountAddress
 
 
 class Protocol(BaseModel):
     name: str
-    image: t.Optional[str] = Field(default=None)
+    image: str | None = Field(default=None)
 
 
 class DepositTokenStakeAction(BaseModel):
     staker: AccountAddress
     protocol: Protocol
-    stake_meta: t.Optional[Price] = Field(default=None)
+    stake_meta: Price | None = Field(default=None)
+
+
+class DomainRenewAction(BaseModel):
+    domain: str
+    contract_address: str
+    renewer: AccountAddress
+
+
+class SubscriptionAction(BaseModel):
+    subscriber: AccountAddress
+    subscription: str
+    beneficiary: AccountAddress
+    admin: AccountAddress
+    price: Price
+    initial: bool
+    amount: int | None = Field(default=None)
 
 
 class VaultDepositInfo(BaseModel):
@@ -268,9 +146,38 @@ class VaultDepositInfo(BaseModel):
 class LiquidityDepositAction(BaseModel):
     protocol: Protocol
     from_: AccountAddress = Field(alias="from")
-    tokens: t.List[VaultDepositInfo]
+    tokens: list[VaultDepositInfo]
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class ActionSimplePreview(BaseModel):
+    name: str
+    description: str
+    accounts: list[AccountAddress]
+    action_image: str | None = Field(default=None)
+    value: str | None = Field(default=None)
+    value_image: str | None = Field(default=None)
+
+
+class NftItemTransferAction(BaseModel):
+    nft: str
+    sender: AccountAddress | None = Field(default=None)
+    recipient: AccountAddress | None = Field(default=None)
+    comment: str | None = Field(default=None)
+    encrypted_comment: EncryptedComment | None = Field(default=None)
+    payload: str | None = Field(default=None)
+    refund: Refund | None = Field(default=None)
+
+
+class ElectionsRecoverStakeAction(BaseModel):
+    amount: int
+    staker: AccountAddress
+
+
+class AddExtensionAction(BaseModel):
+    wallet: AccountAddress
+    extension: str
 
 
 class ElectionsDepositStakeAction(BaseModel):
@@ -278,10 +185,100 @@ class ElectionsDepositStakeAction(BaseModel):
     staker: AccountAddress
 
 
+class GasRelayAction(BaseModel):
+    amount: int
+    relayer: AccountAddress
+    target: AccountAddress
+
+
+class ContractDeployAction(BaseModel):
+    address: str
+    interfaces: list[str]
+
+
+class SetSignatureAllowedAction(BaseModel):
+    wallet: AccountAddress
+    allowed: bool
+
+
+class ExtraCurrencyTransferAction(BaseModel):
+    sender: AccountAddress
+    recipient: AccountAddress
+    amount: str
+    currency: EcPreview
+    comment: str | None = Field(default=None)
+    encrypted_comment: EncryptedComment | None = Field(default=None)
+
+
+class TonTransferAction(BaseModel):
+    sender: AccountAddress
+    recipient: AccountAddress
+    amount: int
+    comment: str | None = Field(default=None)
+    encrypted_comment: EncryptedComment | None = Field(default=None)
+    refund: Refund | None = Field(default=None)
+
+
+class RemoveExtensionAction(BaseModel):
+    wallet: AccountAddress
+    extension: str
+
+
+class WithdrawStakeRequestAction(BaseModel):
+    staker: AccountAddress
+    pool: AccountAddress
+    implementation: PoolImplementationType
+    amount: int | None = Field(default=None)
+
+
+class JettonTransferAction(BaseModel):
+    senders_wallet: str
+    recipients_wallet: str
+    amount: str
+    jetton: JettonPreview
+    sender: AccountAddress | None = Field(default=None)
+    recipient: AccountAddress | None = Field(default=None)
+    comment: str | None = Field(default=None)
+    encrypted_comment: EncryptedComment | None = Field(default=None)
+    refund: Refund | None = Field(default=None)
+
+
+class Metadata(BaseModel):
+    encrypted_binary: str
+    decryption_key: str | None = Field(default=None)
+
+
+class PurchaseAction(BaseModel):
+    source: AccountAddress
+    destination: AccountAddress
+    invoice_id: str
+    amount: Price
+    metadata: Metadata
+
+
+class DepositStakeAction(BaseModel):
+    amount: int
+    staker: AccountAddress
+    pool: AccountAddress
+    implementation: PoolImplementationType
+
+
+class JettonSwapAction(BaseModel):
+    dex: str
+    amount_in: str
+    amount_out: str
+    user_wallet: AccountAddress
+    router: AccountAddress
+    ton_in: int | None = Field(default=None)
+    ton_out: int | None = Field(default=None)
+    jetton_master_in: JettonPreview | None = Field(default=None)
+    jetton_master_out: JettonPreview | None = Field(default=None)
+
+
 class WithdrawTokenStakeRequestAction(BaseModel):
     staker: AccountAddress
     protocol: Protocol
-    stake_meta: t.Optional[Price] = Field(default=None)
+    stake_meta: Price | None = Field(default=None)
 
 
 class AuctionBidAction(BaseModel):
@@ -289,93 +286,63 @@ class AuctionBidAction(BaseModel):
     amount: Price
     bidder: AccountAddress
     auction: AccountAddress
-    nft: t.Optional[NftItem] = Field(default=None)
+    nft: NftItem | None = Field(default=None)
 
 
-class TonTransferAction(BaseModel):
-    sender: AccountAddress
-    recipient: AccountAddress
-    amount: int
-    comment: t.Optional[str] = Field(default=None)
-    encrypted_comment: t.Optional[EncryptedComment] = Field(default=None)
-    refund: t.Optional[Refund] = Field(default=None)
+class SmartContractAction(BaseModel):
+    executor: AccountAddress
+    contract: AccountAddress
+    ton_attached: int
+    operation: str
+    payload: str | None = Field(default=None)
+    refund: Refund | None = Field(default=None)
+
+
+class NftPurchaseAction(BaseModel):
+    auction_type: str
+    amount: Price
+    nft: NftItem
+    seller: AccountAddress
+    buyer: AccountAddress
 
 
 class Action(BaseModel):
     type: str
     status: str
     simple_preview: ActionSimplePreview
-    base_transactions: t.List[str]
-    ton_transfer: t.Optional[TonTransferAction] = Field(
-        alias="TonTransfer", default=None
-    )
-    extra_currency_transfer: t.Optional[ExtraCurrencyTransferAction] = Field(
-        alias="ExtraCurrencyTransfer", default=None
-    )
-    contract_deploy: t.Optional[ContractDeployAction] = Field(
-        alias="ContractDeploy", default=None
-    )
-    jetton_transfer: t.Optional[JettonTransferAction] = Field(
-        alias="JettonTransfer", default=None
-    )
-    flawed_jetton_transfer: t.Optional[FlawedJettonTransferAction] = Field(
-        alias="FlawedJettonTransfer", default=None
-    )
-    jetton_burn: t.Optional[JettonBurnAction] = Field(alias="JettonBurn", default=None)
-    jetton_mint: t.Optional[JettonMintAction] = Field(alias="JettonMint", default=None)
-    nft_item_transfer: t.Optional[NftItemTransferAction] = Field(
-        alias="NftItemTransfer", default=None
-    )
-    subscribe: t.Optional[SubscriptionAction] = Field(alias="Subscribe", default=None)
-    un_subscribe: t.Optional[UnSubscriptionAction] = Field(
-        alias="UnSubscribe", default=None
-    )
-    auction_bid: t.Optional[AuctionBidAction] = Field(alias="AuctionBid", default=None)
-    nft_purchase: t.Optional[NftPurchaseAction] = Field(
-        alias="NftPurchase", default=None
-    )
-    deposit_stake: t.Optional[DepositStakeAction] = Field(
-        alias="DepositStake", default=None
-    )
-    withdraw_stake: t.Optional[WithdrawStakeAction] = Field(
-        alias="WithdrawStake", default=None
-    )
-    withdraw_stake_request: t.Optional[WithdrawStakeRequestAction] = Field(
-        alias="WithdrawStakeRequest", default=None
-    )
-    elections_deposit_stake: t.Optional[ElectionsDepositStakeAction] = Field(
-        alias="ElectionsDepositStake", default=None
-    )
-    elections_recover_stake: t.Optional[ElectionsRecoverStakeAction] = Field(
-        alias="ElectionsRecoverStake", default=None
-    )
-    jetton_swap: t.Optional[JettonSwapAction] = Field(alias="JettonSwap", default=None)
-    smart_contract_exec: t.Optional[SmartContractAction] = Field(
-        alias="SmartContractExec", default=None
-    )
-    domain_renew: t.Optional[DomainRenewAction] = Field(
-        alias="DomainRenew", default=None
-    )
-    purchase: t.Optional[PurchaseAction] = Field(alias="Purchase", default=None)
-    add_extension: t.Optional[AddExtensionAction] = Field(
-        alias="AddExtension", default=None
-    )
-    remove_extension: t.Optional[RemoveExtensionAction] = Field(
-        alias="RemoveExtension", default=None
-    )
-    set_signature_allowed_action: t.Optional[SetSignatureAllowedAction] = Field(
+    base_transactions: list[str]
+    ton_transfer: TonTransferAction | None = Field(alias="TonTransfer", default=None)
+    extra_currency_transfer: ExtraCurrencyTransferAction | None = Field(alias="ExtraCurrencyTransfer", default=None)
+    contract_deploy: ContractDeployAction | None = Field(alias="ContractDeploy", default=None)
+    jetton_transfer: JettonTransferAction | None = Field(alias="JettonTransfer", default=None)
+    flawed_jetton_transfer: FlawedJettonTransferAction | None = Field(alias="FlawedJettonTransfer", default=None)
+    jetton_burn: JettonBurnAction | None = Field(alias="JettonBurn", default=None)
+    jetton_mint: JettonMintAction | None = Field(alias="JettonMint", default=None)
+    nft_item_transfer: NftItemTransferAction | None = Field(alias="NftItemTransfer", default=None)
+    subscribe: SubscriptionAction | None = Field(alias="Subscribe", default=None)
+    un_subscribe: UnSubscriptionAction | None = Field(alias="UnSubscribe", default=None)
+    auction_bid: AuctionBidAction | None = Field(alias="AuctionBid", default=None)
+    nft_purchase: NftPurchaseAction | None = Field(alias="NftPurchase", default=None)
+    deposit_stake: DepositStakeAction | None = Field(alias="DepositStake", default=None)
+    withdraw_stake: WithdrawStakeAction | None = Field(alias="WithdrawStake", default=None)
+    withdraw_stake_request: WithdrawStakeRequestAction | None = Field(alias="WithdrawStakeRequest", default=None)
+    elections_deposit_stake: ElectionsDepositStakeAction | None = Field(alias="ElectionsDepositStake", default=None)
+    elections_recover_stake: ElectionsRecoverStakeAction | None = Field(alias="ElectionsRecoverStake", default=None)
+    jetton_swap: JettonSwapAction | None = Field(alias="JettonSwap", default=None)
+    smart_contract_exec: SmartContractAction | None = Field(alias="SmartContractExec", default=None)
+    domain_renew: DomainRenewAction | None = Field(alias="DomainRenew", default=None)
+    purchase: PurchaseAction | None = Field(alias="Purchase", default=None)
+    add_extension: AddExtensionAction | None = Field(alias="AddExtension", default=None)
+    remove_extension: RemoveExtensionAction | None = Field(alias="RemoveExtension", default=None)
+    set_signature_allowed_action: SetSignatureAllowedAction | None = Field(
         alias="SetSignatureAllowedAction", default=None
     )
-    gas_relay: t.Optional[GasRelayAction] = Field(alias="GasRelay", default=None)
-    deposit_token_stake: t.Optional[DepositTokenStakeAction] = Field(
-        alias="DepositTokenStake", default=None
-    )
-    withdraw_token_stake_request: t.Optional[WithdrawTokenStakeRequestAction] = Field(
+    gas_relay: GasRelayAction | None = Field(alias="GasRelay", default=None)
+    deposit_token_stake: DepositTokenStakeAction | None = Field(alias="DepositTokenStake", default=None)
+    withdraw_token_stake_request: WithdrawTokenStakeRequestAction | None = Field(
         alias="WithdrawTokenStakeRequest", default=None
     )
-    liquidity_deposit: t.Optional[LiquidityDepositAction] = Field(
-        alias="LiquidityDeposit", default=None
-    )
+    liquidity_deposit: LiquidityDepositAction | None = Field(alias="LiquidityDeposit", default=None)
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -384,30 +351,30 @@ class AccountEvent(BaseModel):
     event_id: str
     account: AccountAddress
     timestamp: int
-    actions: t.List[Action]
+    actions: list[Action]
     is_scam: bool
     lt: int
     in_progress: bool
     extra: int
     progress: float
-    ext_msg_hash: t.Optional[str] = Field(default=None)
+    ext_msg_hash: str | None = Field(default=None)
 
 
 class AccountEvents(BaseModel):
-    events: t.List[AccountEvent]
+    events: list[AccountEvent]
     next_from: int
 
 
 class Accounts(BaseModel):
-    accounts: t.List[Account]
+    accounts: list[Account]
 
 
 class DnsExpiring(BaseModel):
-    items: t.List[t.Any]
+    items: list[t.Any]
 
 
 class DomainNames(BaseModel):
-    domains: t.List[str]
+    domains: list[str]
 
 
 class ExecGetMethodArg(BaseModel):
@@ -416,20 +383,20 @@ class ExecGetMethodArg(BaseModel):
 
 
 class ExtraCurrencies(BaseModel):
-    extra_currencies: t.List[EcPreview]
+    extra_currencies: list[EcPreview]
 
 
 class FoundAccounts(BaseModel):
-    addresses: t.List[t.Any]
+    addresses: list[t.Any]
 
 
 class JettonBalance(BaseModel):
     balance: str
     wallet_address: AccountAddress
     jetton: JettonPreview
-    price: t.Optional[TokenRates] = Field(default=None)
-    extensions: t.Optional[t.List[str]] = Field(default=None)
-    lock: t.Optional[t.Any] = Field(default=None)
+    price: TokenRates | None = Field(default=None)
+    extensions: list[str] | None = Field(default=None)
+    lock: t.Any | None = Field(default=None)
 
 
 class JettonOperation(BaseModel):
@@ -441,22 +408,22 @@ class JettonOperation(BaseModel):
     jetton: JettonPreview
     trace_id: str
     query_id: str
-    source: t.Optional[AccountAddress] = Field(default=None)
-    destination: t.Optional[AccountAddress] = Field(default=None)
-    payload: t.Optional[t.Any] = Field(default=None)
+    source: AccountAddress | None = Field(default=None)
+    destination: AccountAddress | None = Field(default=None)
+    payload: t.Any | None = Field(default=None)
 
 
 class JettonOperations(BaseModel):
-    operations: t.List[JettonOperation]
-    next_from: t.Optional[int] = Field(default=None)
+    operations: list[JettonOperation]
+    next_from: int | None = Field(default=None)
 
 
 class JettonsBalances(BaseModel):
-    balances: t.List[JettonBalance]
+    balances: list[JettonBalance]
 
 
 class Multisigs(BaseModel):
-    multisigs: t.List[Multisig]
+    multisigs: list[Multisig]
 
 
 class Subscription(BaseModel):
@@ -468,13 +435,13 @@ class Subscription(BaseModel):
     wallet: AccountAddress
     next_charge_at: int
     metadata: Metadata
-    address: t.Optional[str] = Field(default=None)
-    beneficiary: t.Optional[AccountAddress] = Field(default=None)
-    admin: t.Optional[AccountAddress] = Field(default=None)
+    address: str | None = Field(default=None)
+    beneficiary: AccountAddress | None = Field(default=None)
+    admin: AccountAddress | None = Field(default=None)
 
 
 class Subscriptions(BaseModel):
-    subscriptions: t.List[Subscription]
+    subscriptions: list[Subscription]
 
 
 class TraceID(BaseModel):
@@ -483,4 +450,4 @@ class TraceID(BaseModel):
 
 
 class TraceIDs(BaseModel):
-    traces: t.List[TraceID]
+    traces: list[TraceID]

@@ -6,13 +6,12 @@ import typing as t
 
 from pydantic import BaseModel, Field
 
-from pytonapi.rest.models._enums import TrustType
+from pytonapi.rest.models._enums import CurrencyType, TrustType
 
 if t.TYPE_CHECKING:
     from pytonapi.rest.models.accounts import AccountAddress
-    from pytonapi.rest.models.purchases import Price
 
-NftApprovedBy = t.List[str]
+NftApprovedBy = list[str]
 
 
 class ImagePreview(BaseModel):
@@ -25,39 +24,51 @@ class NftCollection(BaseModel):
     next_item_index: int
     raw_collection_content: str
     approved_by: NftApprovedBy
-    owner: t.Optional[AccountAddress] = Field(default=None)
-    metadata: t.Optional[t.Dict[str, t.Any]] = Field(default=None)
-    previews: t.Optional[t.List[ImagePreview]] = Field(default=None)
+    owner: AccountAddress | None = Field(default=None)
+    metadata: dict[str, t.Any] | None = Field(default=None)
+    previews: list[ImagePreview] | None = Field(default=None)
 
 
 class NftCollections(BaseModel):
-    nft_collections: t.List[NftCollection]
+    nft_collections: list[NftCollection]
+
+
+class Price(BaseModel):
+    currency_type: CurrencyType
+    value: str
+    decimals: int
+    token_name: str
+    verification: TrustType
+    image: str
+    jetton: str | None = Field(default=None)
 
 
 class Sale(BaseModel):
     address: str
     market: AccountAddress
     price: Price
-    owner: t.Optional[AccountAddress] = Field(default=None)
+    owner: AccountAddress | None = Field(default=None)
 
 
 class NftItem(BaseModel):
     address: str
     index: int
     verified: bool
-    metadata: t.Dict[str, t.Any]
+    metadata: dict[str, t.Any]
     approved_by: NftApprovedBy
     trust: TrustType
-    owner: t.Optional[AccountAddress] = Field(default=None)
-    collection: t.Optional[t.Any] = Field(default=None)
-    sale: t.Optional[Sale] = Field(default=None)
-    previews: t.Optional[t.List[ImagePreview]] = Field(default=None)
-    dns: t.Optional[str] = Field(default=None)
-    include_cnft: t.Optional[bool] = Field(default=None)
+    owner: AccountAddress | None = Field(default=None)
+    collection: t.Any | None = Field(default=None)
+    sale: Sale | None = Field(default=None)
+    previews: list[ImagePreview] | None = Field(default=None)
+    dns: str | None = Field(default=None)
+    include_cnft: bool | None = Field(default=None)
+    code_hash: str | None = Field(default=None)
+    data_hash: str | None = Field(default=None)
 
 
 class NftItems(BaseModel):
-    nft_items: t.List[NftItem]
+    nft_items: list[NftItem]
 
 
 class NftOperation(BaseModel):
@@ -66,10 +77,10 @@ class NftOperation(BaseModel):
     lt: int
     transaction_hash: str
     item: NftItem
-    source: t.Optional[AccountAddress] = Field(default=None)
-    destination: t.Optional[AccountAddress] = Field(default=None)
+    source: AccountAddress | None = Field(default=None)
+    destination: AccountAddress | None = Field(default=None)
 
 
 class NftOperations(BaseModel):
-    operations: t.List[NftOperation]
-    next_from: t.Optional[int] = Field(default=None)
+    operations: list[NftOperation]
+    next_from: int | None = Field(default=None)

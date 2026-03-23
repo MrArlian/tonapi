@@ -12,6 +12,6 @@ if t.TYPE_CHECKING:
 
 class Trace(BaseModel):
     transaction: Transaction
-    interfaces: t.List[str]
-    children: t.Optional[t.List[Trace]] = Field(default=None)
-    emulated: t.Optional[bool] = Field(default=None)
+    interfaces: list[str]
+    children: list[Trace] | None = Field(default=None)
+    emulated: bool | None = Field(default=None)

@@ -13,7 +13,7 @@ if t.TYPE_CHECKING:
 class DecodedMessage(BaseModel):
     destination: AccountAddress
     destination_wallet_version: str
-    ext_in_msg_decoded: t.Optional[t.Any] = Field(default=None)
+    ext_in_msg_decoded: t.Any | None = Field(default=None)
 
 
 class DecodedRawMessage(BaseModel):

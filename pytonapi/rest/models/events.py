@@ -14,17 +14,17 @@ class ValueFlow(BaseModel):
     account: AccountAddress
     ton: int
     fees: int
-    jettons: t.Optional[t.List[t.Any]] = Field(default=None)
+    jettons: list[t.Any] | None = Field(default=None)
 
 
 class Event(BaseModel):
     event_id: str
     timestamp: int
-    actions: t.List[Action]
-    value_flow: t.List[ValueFlow]
+    actions: list[Action]
+    value_flow: list[ValueFlow]
     is_scam: bool
     lt: int
     in_progress: bool
     progress: float
-    last_slice_id: t.Optional[int] = Field(default=None)
-    ext_msg_hash: t.Optional[str] = Field(default=None)
+    last_slice_id: int | None = Field(default=None)
+    ext_msg_hash: str | None = Field(default=None)

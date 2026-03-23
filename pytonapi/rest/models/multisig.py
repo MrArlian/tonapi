@@ -20,9 +20,9 @@ class JettonQuantity(BaseModel):
 class Risk(BaseModel):
     transfer_all_remaining_balance: bool
     ton: int
-    jettons: t.List[JettonQuantity]
-    nfts: t.List[NftItem]
-    total_equivalent: t.Optional[float] = Field(default=None)
+    jettons: list[JettonQuantity]
+    nfts: list[NftItem]
+    total_equivalent: float | None = Field(default=None)
 
 
 class MultisigOrder(BaseModel):
@@ -30,20 +30,20 @@ class MultisigOrder(BaseModel):
     order_seqno: str
     threshold: int
     sent_for_execution: bool
-    signers: t.List[str]
+    signers: list[str]
     approvals_num: int
     expiration_date: int
     risk: Risk
     creation_date: int
-    signed_by: t.List[str]
+    signed_by: list[str]
     multisig_address: str
-    changing_parameters: t.Optional[t.Any] = Field(default=None)
+    changing_parameters: t.Any | None = Field(default=None)
 
 
 class Multisig(BaseModel):
     address: str
     seqno: str
     threshold: int
-    signers: t.List[str]
-    proposers: t.List[str]
-    orders: t.List[MultisigOrder]
+    signers: list[str]
+    proposers: list[str]
+    orders: list[MultisigOrder]

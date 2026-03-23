@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:
 
 class GaslessConfig(BaseModel):
     relay_address: str
-    gas_jettons: t.List[t.Any]
+    gas_jettons: list[t.Any]
 
 
 class GaslessTx(BaseModel):
@@ -22,8 +22,8 @@ class GaslessTx(BaseModel):
 class SignRawMessage(BaseModel):
     address: str
     amount: str
-    payload: t.Optional[str] = Field(default=None)
-    state_init: t.Optional[str] = Field(alias="stateInit", default=None)
+    payload: str | None = Field(default=None)
+    state_init: str | None = Field(alias="stateInit", default=None)
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -34,7 +34,7 @@ class SignRawParams(BaseModel):
     commission: str
     from_: str = Field(alias="from")
     valid_until: int
-    messages: t.List[SignRawMessage]
-    emulation: t.Optional[MessageConsequences] = Field(default=None)
+    messages: list[SignRawMessage]
+    emulation: MessageConsequences | None = Field(default=None)
 
     model_config = ConfigDict(populate_by_name=True)
