@@ -4,24 +4,18 @@ from __future__ import annotations
 
 import typing as t
 
-from pytonapi.rest.models import (
-    AccountEvent,
-    DecodedMessage,
-    Event,
-    MessageConsequences,
-    Trace,
-)
+from pytonapi.rest.models import AccountEvent, DecodedMessage, Event, MessageConsequences, Trace
 from pytonapi.rest.resources._base import BaseResource
 
 
 class EmulationResource(BaseResource):
+    """EmulationResource resource group."""
+
     async def decode_message(
         self,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> DecodedMessage:
-        """
-        Decode a given message. Only external incoming messages can be decoded
-        currently.
+        """Decode a given message. Only external incoming messages can be decoded currently.
 
         :param body: Request body.
         :return: DecodedMessage
@@ -36,12 +30,11 @@ class EmulationResource(BaseResource):
 
     async def emulate_message_to_event(
         self,
-        body: t.Dict[str, t.Any],
-        ignore_signature_check: t.Optional[bool] = None,
-        accept_language: t.Optional[str] = None,
+        body: dict[str, t.Any],
+        ignore_signature_check: bool | None = None,
+        accept_language: str | None = None,
     ) -> Event:
-        """
-        Emulate sending message to retrieve general blockchain events.
+        """Emulate sending message to retrieve general blockchain events.
 
         :param body: Request body.
         :param ignore_signature_check: Ignore signature check.
@@ -62,11 +55,10 @@ class EmulationResource(BaseResource):
 
     async def emulate_message_to_trace(
         self,
-        body: t.Dict[str, t.Any],
-        ignore_signature_check: t.Optional[bool] = None,
+        body: dict[str, t.Any],
+        ignore_signature_check: bool | None = None,
     ) -> Trace:
-        """
-        Emulate sending message to retrieve with a detailed execution trace.
+        """Emulate sending message to retrieve with a detailed execution trace.
 
         :param body: Request body.
         :param ignore_signature_check: Ignore signature check.
@@ -84,13 +76,11 @@ class EmulationResource(BaseResource):
 
     async def emulate_message_to_wallet(
         self,
-        body: t.Dict[str, t.Any],
-        currency: t.Optional[str] = None,
-        accept_language: t.Optional[str] = None,
+        body: dict[str, t.Any],
+        currency: str | None = None,
+        accept_language: str | None = None,
     ) -> MessageConsequences:
-        """
-        Emulates a wallet message on the current blockchain state and derives its
-        consequences for the signing wallet.
+        """Emulate a wallet message on the current blockchain state and derives its consequences for the signing wallet.
 
         :param body: Request body.
         :param currency: Currency.
@@ -112,12 +102,11 @@ class EmulationResource(BaseResource):
     async def emulate_message_to_account_event(
         self,
         account_id: str,
-        body: t.Dict[str, t.Any],
-        ignore_signature_check: t.Optional[bool] = None,
-        accept_language: t.Optional[str] = None,
+        body: dict[str, t.Any],
+        ignore_signature_check: bool | None = None,
+        accept_language: str | None = None,
     ) -> AccountEvent:
-        """
-        Emulate sending message to retrieve account-specific events.
+        """Emulate sending message to retrieve account-specific events.
 
         :param account_id: Account ID.
         :param body: Request body.

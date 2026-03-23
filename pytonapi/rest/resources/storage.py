@@ -8,13 +8,14 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class StorageResource(BaseResource):
+    """StorageResource resource group."""
+
     async def get_providers(
         self,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get TON storage providers deployed to the blockchain.
+    ) -> t.Any:
+        """Get TON storage providers deployed to the blockchain.
 
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/storage/providers"
         return await self._request(

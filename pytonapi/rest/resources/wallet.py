@@ -4,26 +4,21 @@ from __future__ import annotations
 
 import typing as t
 
-from pytonapi.rest.models import (
-    MessageConsequences,
-    Seqno,
-    Wallet,
-    Wallets,
-    WalletsByPublicKeys,
-)
+from pytonapi.rest.models import MessageConsequences, Seqno, Wallet, Wallets, WalletsByPublicKeys
 from pytonapi.rest.resources._base import BaseResource
 
 
 class WalletResource(BaseResource):
+    """WalletResource resource group."""
+
     async def ton_connect_proof(
         self,
-        body: t.Dict[str, t.Any],
-    ) -> t.Dict[str, t.Any]:
-        """
-        Account verification and token issuance.
+        body: dict[str, t.Any],
+    ) -> t.Any:
+        """Account verification and token issuance.
 
         :param body: Request body.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/wallet/auth/proof"
         return await self._request(
@@ -36,8 +31,7 @@ class WalletResource(BaseResource):
         self,
         account_id: str,
     ) -> Seqno:
-        """
-        Get account seqno.
+        """Get account seqno.
 
         :param account_id: Account ID.
         :return: Seqno
@@ -53,8 +47,7 @@ class WalletResource(BaseResource):
         self,
         account_id: str,
     ) -> Wallet:
-        """
-        Get human-friendly information about a wallet without low-level details.
+        """Get human-friendly information about a wallet without low-level details.
 
         :param account_id: Account ID.
         :return: Wallet
@@ -70,8 +63,7 @@ class WalletResource(BaseResource):
         self,
         public_key: str,
     ) -> Wallets:
-        """
-        Get wallets by public key.
+        """Get wallets by public key.
 
         :param public_key: Public key.
         :return: Wallets
@@ -85,10 +77,9 @@ class WalletResource(BaseResource):
 
     async def get_wallets_by_public_key_bulk(
         self,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> WalletsByPublicKeys:
-        """
-        Get wallets by a list of public keys.
+        """Get wallets by a list of public keys.
 
         :param body: Request body.
         :return: WalletsByPublicKeys
@@ -103,13 +94,11 @@ class WalletResource(BaseResource):
 
     async def emulate_message_to_wallet(
         self,
-        body: t.Dict[str, t.Any],
-        currency: t.Optional[str] = None,
-        accept_language: t.Optional[str] = None,
+        body: dict[str, t.Any],
+        currency: str | None = None,
+        accept_language: str | None = None,
     ) -> MessageConsequences:
-        """
-        Emulates a wallet message on the current blockchain state and derives its
-        consequences for the signing wallet.
+        """Emulate a wallet message on the current blockchain state and derives its consequences for the signing wallet.
 
         :param body: Request body.
         :param currency: Currency.

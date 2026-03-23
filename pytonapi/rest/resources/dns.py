@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
-import typing as t
-
 from pytonapi.rest.models import Auctions, DnsRecord, DomainBids, DomainInfo
 from pytonapi.rest.resources._base import BaseResource
 
 
 class DNSResource(BaseResource):
+    """DNSResource resource group."""
+
     async def get_info(
         self,
         domain_name: str,
     ) -> DomainInfo:
-        """
-        Get full information about domain name.
+        """Get full information about domain name.
 
         :param domain_name: Domain name with .ton or .t.me.
         :return: DomainInfo
@@ -31,8 +30,7 @@ class DNSResource(BaseResource):
         domain_name: str,
         filter: bool = False,
     ) -> DnsRecord:
-        """
-        DNS resolve for domain name.
+        """DNS resolve for domain name.
 
         :param domain_name: Domain name with .ton or .t.me.
         :param filter: Filter.
@@ -51,8 +49,7 @@ class DNSResource(BaseResource):
         self,
         domain_name: str,
     ) -> DomainBids:
-        """
-        Get domain bids.
+        """Get domain bids.
 
         :param domain_name: Domain name with .ton or .t.me.
         :return: DomainBids
@@ -66,10 +63,9 @@ class DNSResource(BaseResource):
 
     async def get_all_auctions(
         self,
-        tld: t.Optional[str] = None,
+        tld: str | None = None,
     ) -> Auctions:
-        """
-        Get all auctions.
+        """Get all auctions.
 
         :param tld: Domain filter for current auctions "ton" or "t.me".
         :return: Auctions

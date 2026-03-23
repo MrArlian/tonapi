@@ -7,12 +7,13 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class ExtraCurrencyResource(BaseResource):
+    """ExtraCurrencyResource resource group."""
+
     async def get_info(
         self,
         id: int,
     ) -> EcPreview:
-        """
-        Get extra currency info by id.
+        """Get extra currency info by id.
 
         :param id: Extra currency id.
         :return: EcPreview

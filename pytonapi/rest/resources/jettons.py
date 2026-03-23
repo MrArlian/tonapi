@@ -4,24 +4,19 @@ from __future__ import annotations
 
 import typing as t
 
-from pytonapi.rest.models import (
-    Event,
-    JettonHolders,
-    JettonInfo,
-    Jettons,
-    JettonTransferPayload,
-)
+from pytonapi.rest.models import Event, JettonHolders, JettonInfo, Jettons, JettonTransferPayload
 from pytonapi.rest.resources._base import BaseResource
 
 
 class JettonsResource(BaseResource):
+    """JettonsResource resource group."""
+
     async def get_jettons(
         self,
         limit: int = 100,
         offset: int = 0,
     ) -> Jettons:
-        """
-        Get a list of all indexed jetton masters in the blockchain.
+        """Get a list of all indexed jetton masters in the blockchain.
 
         :param limit: Limit.
         :param offset: Offset.
@@ -43,8 +38,7 @@ class JettonsResource(BaseResource):
         self,
         account_id: str,
     ) -> JettonInfo:
-        """
-        Get jetton metadata by jetton master address.
+        """Get jetton metadata by jetton master address.
 
         :param account_id: Account ID.
         :return: JettonInfo
@@ -58,10 +52,9 @@ class JettonsResource(BaseResource):
 
     async def get_jetton_infos_by_addresses(
         self,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> Jettons:
-        """
-        Get jetton metadata items by jetton master addresses.
+        """Get jetton metadata items by jetton master addresses.
 
         :param body: Request body.
         :return: Jettons
@@ -80,8 +73,7 @@ class JettonsResource(BaseResource):
         limit: int = 1000,
         offset: int = 0,
     ) -> JettonHolders:
-        """
-        Get jetton's holders.
+        """Get jetton's holders.
 
         :param account_id: Account ID.
         :param limit: Limit.
@@ -105,8 +97,7 @@ class JettonsResource(BaseResource):
         account_id: str,
         jetton_id: str,
     ) -> JettonTransferPayload:
-        """
-        Get jetton's custom payload and state init required for transfer.
+        """Get jetton's custom payload and state init required for transfer.
 
         :param account_id: Account ID.
         :param jetton_id: Jetton ID.
@@ -122,10 +113,9 @@ class JettonsResource(BaseResource):
     async def get_events(
         self,
         event_id: str,
-        accept_language: t.Optional[str] = None,
+        accept_language: str | None = None,
     ) -> Event:
-        """
-        Get only jetton transfers in the event.
+        """Get only jetton transfers in the event.
 
         :param event_id: Event ID or transaction hash in hex (without 0x) or base64url
             format.

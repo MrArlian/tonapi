@@ -4,27 +4,21 @@ from __future__ import annotations
 
 import typing as t
 
-from pytonapi.rest.models import (
-    AccountEvents,
-    NftCollection,
-    NftCollections,
-    NftItem,
-    NftItems,
-    NftOperations,
-)
+from pytonapi.rest.models import AccountEvents, NftCollection, NftCollections, NftItem, NftItems, NftOperations
 from pytonapi.rest.resources._base import BaseResource
 
 
 class NFTResource(BaseResource):
+    """NFTResource resource group."""
+
     async def get_account_nft_history(
         self,
         account_id: str,
         limit: int,
-        before_lt: t.Optional[int] = None,
-        accept_language: t.Optional[str] = None,
+        before_lt: int | None = None,
+        accept_language: str | None = None,
     ) -> NftOperations:
-        """
-        Get the transfer nft history.
+        """Get the transfer nft history.
 
         :param account_id: Account ID.
         :param before_lt: Omit this parameter to get last events.
@@ -51,8 +45,7 @@ class NFTResource(BaseResource):
         limit: int = 100,
         offset: int = 0,
     ) -> NftCollections:
-        """
-        Get NFT collections.
+        """Get NFT collections.
 
         :param limit: Limit.
         :param offset: Offset.
@@ -74,8 +67,7 @@ class NFTResource(BaseResource):
         self,
         account_id: str,
     ) -> NftCollection:
-        """
-        Get NFT collection by collection address.
+        """Get NFT collection by collection address.
 
         :param account_id: Account ID.
         :return: NftCollection
@@ -89,10 +81,9 @@ class NFTResource(BaseResource):
 
     async def get_collection_items_by_addresses(
         self,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> NftCollections:
-        """
-        Get NFT collection items by their addresses.
+        """Get NFT collection items by their addresses.
 
         :param body: Request body.
         :return: NftCollections
@@ -111,8 +102,7 @@ class NFTResource(BaseResource):
         limit: int = 1000,
         offset: int = 0,
     ) -> NftItems:
-        """
-        Get NFT items from collection by collection address.
+        """Get NFT items from collection by collection address.
 
         :param account_id: Account ID.
         :param limit: Limit.
@@ -133,10 +123,9 @@ class NFTResource(BaseResource):
 
     async def get_items_by_addresses(
         self,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> NftItems:
-        """
-        Get NFT items by their addresses.
+        """Get NFT items by their addresses.
 
         :param body: Request body.
         :return: NftItems
@@ -153,8 +142,7 @@ class NFTResource(BaseResource):
         self,
         account_id: str,
     ) -> NftItem:
-        """
-        Get NFT item by its address.
+        """Get NFT item by its address.
 
         :param account_id: Account ID.
         :return: NftItem
@@ -170,13 +158,12 @@ class NFTResource(BaseResource):
         self,
         account_id: str,
         limit: int,
-        before_lt: t.Optional[int] = None,
-        start_date: t.Optional[int] = None,
-        end_date: t.Optional[int] = None,
-        accept_language: t.Optional[str] = None,
+        before_lt: int | None = None,
+        start_date: int | None = None,
+        end_date: int | None = None,
+        accept_language: str | None = None,
     ) -> AccountEvents:
-        """
-        Please use `getAccountNftHistory`` instead.
+        """Please use `getAccountNftHistory`` instead.
 
         :param account_id: Account ID.
         :param before_lt: Omit this parameter to get last events.

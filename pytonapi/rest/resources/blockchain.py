@@ -23,13 +23,14 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class BlockchainResource(BaseResource):
+    """BlockchainResource resource group."""
+
     async def get_reduced_blockchain_blocks(
         self,
         from_: int,
         to: int,
     ) -> ReducedBlocks:
-        """
-        Get reduced blockchain blocks data.
+        """Get reduced blockchain blocks data.
 
         :param from_: From.
         :param to: To.
@@ -51,8 +52,7 @@ class BlockchainResource(BaseResource):
         self,
         block_id: str,
     ) -> BlockchainBlock:
-        """
-        Get blockchain block data.
+        """Get blockchain block data.
 
         :param block_id: Block ID.
         :return: BlockchainBlock
@@ -68,8 +68,7 @@ class BlockchainResource(BaseResource):
         self,
         block_id: str,
     ) -> bytes:
-        """
-        Download blockchain block BOC.
+        """Download blockchain block BOC.
 
         :param block_id: Block ID.
         :return: bytes
@@ -85,8 +84,7 @@ class BlockchainResource(BaseResource):
         self,
         masterchain_seqno: int,
     ) -> BlockchainBlockShards:
-        """
-        Get blockchain block shards.
+        """Get blockchain block shards.
 
         :param masterchain_seqno: Masterchain block seqno.
         :return: BlockchainBlockShards
@@ -102,11 +100,7 @@ class BlockchainResource(BaseResource):
         self,
         masterchain_seqno: int,
     ) -> BlockchainBlocks:
-        """
-        Get all blocks in all shards and workchains between target and previous
-        masterchain block according to shards last blocks snapshot in masterchain.  We
-        don't recommend to build your app around this method because it has problem with
-        scalability and will work very slow in the future.
+        """Get all blocks in all shards and workchains between target and previous masterchain block according to shards last blocks snapshot in masterchain.  We don't recommend to build your app around this method because it has problem with scalability and will work very slow in the future.
 
         :param masterchain_seqno: Masterchain block seqno.
         :return: BlockchainBlocks
@@ -122,11 +116,7 @@ class BlockchainResource(BaseResource):
         self,
         masterchain_seqno: int,
     ) -> Transactions:
-        """
-        Get all transactions in all shards and workchains between target and previous
-        masterchain block according to shards last blocks snapshot in masterchain. We
-        don't recommend to build your app around this method because it has problem with
-        scalability and will work very slow in the future.
+        """Get all transactions in all shards and workchains between target and previous masterchain block according to shards last blocks snapshot in masterchain. We don't recommend to build your app around this method because it has problem with scalability and will work very slow in the future.
 
         :param masterchain_seqno: Masterchain block seqno.
         :return: Transactions
@@ -142,8 +132,7 @@ class BlockchainResource(BaseResource):
         self,
         masterchain_seqno: int,
     ) -> BlockchainConfig:
-        """
-        Get blockchain config from a specific block, if present.
+        """Get blockchain config from a specific block, if present.
 
         :param masterchain_seqno: Masterchain block seqno.
         :return: BlockchainConfig
@@ -159,8 +148,7 @@ class BlockchainResource(BaseResource):
         self,
         masterchain_seqno: int,
     ) -> RawBlockchainConfig:
-        """
-        Get raw blockchain config from a specific block, if present.
+        """Get raw blockchain config from a specific block, if present.
 
         :param masterchain_seqno: Masterchain block seqno.
         :return: RawBlockchainConfig
@@ -176,8 +164,7 @@ class BlockchainResource(BaseResource):
         self,
         block_id: str,
     ) -> Transactions:
-        """
-        Get transactions from block.
+        """Get transactions from block.
 
         :param block_id: Block ID.
         :return: Transactions
@@ -193,8 +180,7 @@ class BlockchainResource(BaseResource):
         self,
         transaction_id: str,
     ) -> Transaction:
-        """
-        Get transaction data.
+        """Get transaction data.
 
         :param transaction_id: Transaction ID.
         :return: Transaction
@@ -210,8 +196,7 @@ class BlockchainResource(BaseResource):
         self,
         msg_id: str,
     ) -> Transaction:
-        """
-        Get transaction data by message hash.
+        """Get transaction data by message hash.
 
         :param msg_id: Message ID.
         :return: Transaction
@@ -226,8 +211,7 @@ class BlockchainResource(BaseResource):
     async def get_validators(
         self,
     ) -> Validators:
-        """
-        Get blockchain validators.
+        """Get blockchain validators.
 
         :return: Validators
         """
@@ -241,8 +225,7 @@ class BlockchainResource(BaseResource):
     async def get_masterchain_head(
         self,
     ) -> BlockchainBlock:
-        """
-        Get last known masterchain block.
+        """Get last known masterchain block.
 
         :return: BlockchainBlock
         """
@@ -257,8 +240,7 @@ class BlockchainResource(BaseResource):
         self,
         account_id: str,
     ) -> BlockchainRawAccount:
-        """
-        Get low-level information about an account taken directly from the blockchain.
+        """Get low-level information about an account taken directly from the blockchain.
 
         :param account_id: Account ID.
         :return: BlockchainRawAccount
@@ -273,13 +255,12 @@ class BlockchainResource(BaseResource):
     async def get_account_transactions(
         self,
         account_id: str,
-        after_lt: t.Optional[int] = None,
-        before_lt: t.Optional[int] = None,
+        after_lt: int | None = None,
+        before_lt: int | None = None,
         limit: int = 100,
         sort_order: str = "desc",
     ) -> Transactions:
-        """
-        Get account transactions.
+        """Get account transactions.
 
         :param account_id: Account ID.
         :param after_lt: Omit this parameter to get last transactions.
@@ -306,10 +287,9 @@ class BlockchainResource(BaseResource):
         self,
         account_id: str,
         method_name: str,
-        args: t.Optional[t.List[str]] = None,
+        args: list[str] | None = None,
     ) -> MethodExecutionResult:
-        """
-        Execute get method for account.
+        """Execute get method for account.
 
         :param account_id: Account ID.
         :param method_name: Contract get method name.
@@ -329,10 +309,9 @@ class BlockchainResource(BaseResource):
         self,
         account_id: str,
         method_name: str,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> MethodExecutionResult:
-        """
-        Execute get method for account.
+        """Execute get method for account.
 
         :param account_id: Account ID.
         :param method_name: Contract get method name.
@@ -349,15 +328,14 @@ class BlockchainResource(BaseResource):
 
     async def send_message(
         self,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> None:
-        """
-        Send message to blockchain.
+        """Send message to blockchain.
 
         :param body: Request body.
         """
         path = "/v2/blockchain/message"
-        return await self._request(
+        await self._request(
             method="POST",
             path=path,
             body=body,
@@ -366,8 +344,7 @@ class BlockchainResource(BaseResource):
     async def get_config(
         self,
     ) -> BlockchainConfig:
-        """
-        Get blockchain config.
+        """Get blockchain config.
 
         :return: BlockchainConfig
         """
@@ -381,8 +358,7 @@ class BlockchainResource(BaseResource):
     async def get_raw_blockchain_config(
         self,
     ) -> RawBlockchainConfig:
-        """
-        Get raw blockchain config.
+        """Get raw blockchain config.
 
         :return: RawBlockchainConfig
         """
@@ -397,8 +373,7 @@ class BlockchainResource(BaseResource):
         self,
         account_id: str,
     ) -> BlockchainAccountInspect:
-        """
-        Blockchain account inspect.
+        """Blockchain account inspect.
 
         :param account_id: Account ID.
         :return: BlockchainAccountInspect
@@ -414,8 +389,7 @@ class BlockchainResource(BaseResource):
         self,
         hash: str,
     ) -> BlockchainLibrary:
-        """
-        Get library cell.
+        """Get library cell.
 
         :param hash: Hash in hex (without 0x) format.
         :return: BlockchainLibrary

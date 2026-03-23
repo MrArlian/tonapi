@@ -8,13 +8,14 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class LiteServerResource(BaseResource):
+    """LiteServerResource resource group."""
+
     async def get_raw_masterchain_info(
         self,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw masterchain info.
+    ) -> t.Any:
+        """Get raw masterchain info.
 
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/liteserver/get_masterchain_info"
         return await self._request(
@@ -25,12 +26,11 @@ class LiteServerResource(BaseResource):
     async def get_raw_masterchain_info_ext(
         self,
         mode: int,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw masterchain info ext.
+    ) -> t.Any:
+        """Get raw masterchain info ext.
 
         :param mode: Mode.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/liteserver/get_masterchain_info_ext"
         params = {"mode": mode}
@@ -42,11 +42,10 @@ class LiteServerResource(BaseResource):
 
     async def get_raw_time(
         self,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw time.
+    ) -> t.Any:
+        """Get raw time.
 
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/liteserver/get_time"
         return await self._request(
@@ -57,12 +56,11 @@ class LiteServerResource(BaseResource):
     async def get_raw_blockchain_block(
         self,
         block_id: str,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw blockchain block.
+    ) -> t.Any:
+        """Get raw blockchain block.
 
         :param block_id: Block ID: (workchain,shard,seqno,root_hash,file_hash).
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_block/{block_id}"
         return await self._request(
@@ -73,12 +71,11 @@ class LiteServerResource(BaseResource):
     async def get_raw_blockchain_block_state(
         self,
         block_id: str,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw blockchain block state.
+    ) -> t.Any:
+        """Get raw blockchain block state.
 
         :param block_id: Block ID: (workchain,shard,seqno,root_hash,file_hash).
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_state/{block_id}"
         return await self._request(
@@ -90,13 +87,12 @@ class LiteServerResource(BaseResource):
         self,
         block_id: str,
         mode: int,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw blockchain block header.
+    ) -> t.Any:
+        """Get raw blockchain block header.
 
         :param block_id: Block ID: (workchain,shard,seqno,root_hash,file_hash).
         :param mode: Mode.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_block_header/{block_id}"
         params = {"mode": mode}
@@ -108,13 +104,12 @@ class LiteServerResource(BaseResource):
 
     async def send_raw_message(
         self,
-        body: t.Dict[str, t.Any],
-    ) -> t.Dict[str, t.Any]:
-        """
-        Send raw message to blockchain.
+        body: dict[str, t.Any],
+    ) -> t.Any:
+        """Send raw message to blockchain.
 
         :param body: Request body.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/liteserver/send_message"
         return await self._request(
@@ -126,14 +121,13 @@ class LiteServerResource(BaseResource):
     async def get_raw_account_state(
         self,
         account_id: str,
-        target_block: t.Optional[str] = None,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw account state.
+        target_block: str | None = None,
+    ) -> t.Any:
+        """Get raw account state.
 
         :param account_id: Account ID.
         :param target_block: Target block: (workchain,shard,seqno,root_hash,file_hash).
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_account_state/{account_id}"
         params = {"target_block": target_block}
@@ -149,15 +143,14 @@ class LiteServerResource(BaseResource):
         workchain: int,
         shard: int,
         exact: bool,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw shard info.
+    ) -> t.Any:
+        """Get raw shard info.
 
         :param block_id: Block ID: (workchain,shard,seqno,root_hash,file_hash).
         :param workchain: Workchain.
         :param shard: Shard.
         :param exact: Exact.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_shard_info/{block_id}"
         params = {
@@ -174,12 +167,11 @@ class LiteServerResource(BaseResource):
     async def get_all_raw_shards_info(
         self,
         block_id: str,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get all raw shards info.
+    ) -> t.Any:
+        """Get all raw shards info.
 
         :param block_id: Block ID: (workchain,shard,seqno,root_hash,file_hash).
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_all_shards_info/{block_id}"
         return await self._request(
@@ -193,15 +185,14 @@ class LiteServerResource(BaseResource):
         count: int,
         lt: int,
         hash: str,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw transactions.
+    ) -> t.Any:
+        """Get raw transactions.
 
         :param account_id: Account ID.
         :param count: Count.
         :param lt: Lt.
         :param hash: Hash.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_transactions/{account_id}"
         params = {
@@ -220,18 +211,17 @@ class LiteServerResource(BaseResource):
         block_id: str,
         mode: int,
         count: int,
-        account_id: t.Optional[str] = None,
-        lt: t.Optional[int] = None,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw list block transactions.
+        account_id: str | None = None,
+        lt: int | None = None,
+    ) -> t.Any:
+        """Get raw list block transactions.
 
         :param block_id: Block ID: (workchain,shard,seqno,root_hash,file_hash).
         :param mode: Mode.
         :param count: Count.
         :param account_id: Account ID.
         :param lt: Lt.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/list_block_transactions/{block_id}"
         params = {
@@ -250,15 +240,14 @@ class LiteServerResource(BaseResource):
         self,
         known_block: str,
         mode: int,
-        target_block: t.Optional[str] = None,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw block proof.
+        target_block: str | None = None,
+    ) -> t.Any:
+        """Get raw block proof.
 
         :param known_block: Known block: (workchain,shard,seqno,root_hash,file_hash).
         :param target_block: Target block: (workchain,shard,seqno,root_hash,file_hash).
         :param mode: Mode.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/liteserver/get_block_proof"
         params = {
@@ -276,13 +265,12 @@ class LiteServerResource(BaseResource):
         self,
         block_id: str,
         mode: int,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw config.
+    ) -> t.Any:
+        """Get raw config.
 
         :param block_id: Block ID: (workchain,shard,seqno,root_hash,file_hash).
         :param mode: Mode.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_config_all/{block_id}"
         params = {"mode": mode}
@@ -295,12 +283,11 @@ class LiteServerResource(BaseResource):
     async def get_raw_shard_block_proof(
         self,
         block_id: str,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get raw shard block proof.
+    ) -> t.Any:
+        """Get raw shard block proof.
 
         :param block_id: Block ID: (workchain,shard,seqno,root_hash,file_hash).
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/liteserver/get_shard_block_proof/{block_id}"
         return await self._request(
@@ -310,11 +297,10 @@ class LiteServerResource(BaseResource):
 
     async def get_out_msg_queue_sizes(
         self,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get out msg queue sizes.
+    ) -> t.Any:
+        """Get out msg queue sizes.
 
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/liteserver/get_out_msg_queue_sizes"
         return await self._request(

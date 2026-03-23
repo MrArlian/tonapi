@@ -9,11 +9,12 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class GaslessResource(BaseResource):
+    """GaslessResource resource group."""
+
     async def config(
         self,
     ) -> GaslessConfig:
-        """
-        Returns configuration of gasless transfers.
+        """Return configuration of gasless transfers.
 
         :return: GaslessConfig
         """
@@ -27,11 +28,10 @@ class GaslessResource(BaseResource):
     async def estimate(
         self,
         master_id: str,
-        body: t.Dict[str, t.Any],
-        accept_language: t.Optional[str] = None,
+        body: dict[str, t.Any],
+        accept_language: str | None = None,
     ) -> SignRawParams:
-        """
-        Estimates the cost of the given messages and returns a payload to sign.
+        """Estimate the cost of the given messages and returns a payload to sign.
 
         :param master_id: Jetton to pay commission.
         :param body: Request body.
@@ -50,10 +50,9 @@ class GaslessResource(BaseResource):
 
     async def send(
         self,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> GaslessTx:
-        """
-        Submits the signed gasless transaction message to the network.
+        """Submit the signed gasless transaction message to the network.
 
         :param body: Request body.
         :return: GaslessTx

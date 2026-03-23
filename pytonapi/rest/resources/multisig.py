@@ -7,12 +7,13 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class MultisigResource(BaseResource):
+    """MultisigResource resource group."""
+
     async def get_account(
         self,
         account_id: str,
     ) -> Multisig:
-        """
-        Get multisig account info.
+        """Get multisig account info.
 
         :param account_id: Account ID.
         :return: Multisig
@@ -28,8 +29,7 @@ class MultisigResource(BaseResource):
         self,
         account_id: str,
     ) -> MultisigOrder:
-        """
-        Get multisig order.
+        """Get multisig order.
 
         :param account_id: Account ID.
         :return: MultisigOrder

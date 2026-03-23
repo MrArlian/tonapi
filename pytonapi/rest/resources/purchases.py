@@ -2,21 +2,20 @@
 
 from __future__ import annotations
 
-import typing as t
-
 from pytonapi.rest.models import AccountPurchases
 from pytonapi.rest.resources._base import BaseResource
 
 
 class PurchasesResource(BaseResource):
+    """PurchasesResource resource group."""
+
     async def get_purchase_history(
         self,
         account_id: str,
-        before_lt: t.Optional[int] = None,
+        before_lt: int | None = None,
         limit: int = 100,
     ) -> AccountPurchases:
-        """
-        Get history of purchases.
+        """Get history of purchases.
 
         :param account_id: Account ID.
         :param before_lt: Omit this parameter to get last invoices.

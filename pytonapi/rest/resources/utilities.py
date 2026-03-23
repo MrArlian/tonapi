@@ -9,13 +9,14 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class UtilitiesResource(BaseResource):
+    """UtilitiesResource resource group."""
+
     async def get_openapi_json(
         self,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get the openapi.json file.
+    ) -> t.Any:
+        """Get the openapi.json file.
 
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/openapi.json"
         return await self._request(
@@ -26,8 +27,7 @@ class UtilitiesResource(BaseResource):
     async def get_openapi_yml(
         self,
     ) -> str:
-        """
-        Get the openapi.yml file.
+        """Get the openapi.yml file.
 
         :return: str
         """
@@ -41,8 +41,7 @@ class UtilitiesResource(BaseResource):
     async def status(
         self,
     ) -> ServiceStatus:
-        """
-        Status.
+        """Status.
 
         :return: ServiceStatus
         """
@@ -56,12 +55,11 @@ class UtilitiesResource(BaseResource):
     async def address_parse(
         self,
         account_id: str,
-    ) -> t.Dict[str, t.Any]:
-        """
-        parse address and display in all formats.
+    ) -> t.Any:
+        """parse address and display in all formats.
 
         :param account_id: Account ID.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/address/{account_id}/parse"
         return await self._request(

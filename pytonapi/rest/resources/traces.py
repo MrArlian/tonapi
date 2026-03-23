@@ -9,12 +9,13 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class TracesResource(BaseResource):
+    """TracesResource resource group."""
+
     async def get_trace(
         self,
         trace_id: str,
     ) -> Trace:
-        """
-        Get the trace by trace ID or hash of any transaction in trace.
+        """Get the trace by trace ID or hash of any transaction in trace.
 
         :param trace_id: Trace ID or transaction hash in hex (without 0x) or base64url
             format.
@@ -29,11 +30,10 @@ class TracesResource(BaseResource):
 
     async def emulate_message_to_trace(
         self,
-        body: t.Dict[str, t.Any],
-        ignore_signature_check: t.Optional[bool] = None,
+        body: dict[str, t.Any],
+        ignore_signature_check: bool | None = None,
     ) -> Trace:
-        """
-        Emulate sending message to retrieve with a detailed execution trace.
+        """Emulate sending message to retrieve with a detailed execution trace.
 
         :param body: Request body.
         :param ignore_signature_check: Ignore signature check.

@@ -24,13 +24,14 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class AccountsResource(BaseResource):
+    """AccountsResource resource group."""
+
     async def get_accounts(
         self,
-        body: t.Dict[str, t.Any],
-        currency: t.Optional[str] = None,
+        body: dict[str, t.Any],
+        currency: str | None = None,
     ) -> Accounts:
-        """
-        Get human-friendly information about several accounts without low-level details.
+        """Get human-friendly information about several accounts without low-level details.
 
         :param body: Request body.
         :param currency: Currency.
@@ -50,8 +51,7 @@ class AccountsResource(BaseResource):
         self,
         account_id: str,
     ) -> Account:
-        """
-        Get human-friendly information about an account without low-level details.
+        """Get human-friendly information about an account without low-level details.
 
         :param account_id: Account ID.
         :return: Account
@@ -67,8 +67,7 @@ class AccountsResource(BaseResource):
         self,
         account_id: str,
     ) -> DomainNames:
-        """
-        Get account's domains.
+        """Get account's domains.
 
         :param account_id: Account ID.
         :return: DomainNames
@@ -83,22 +82,27 @@ class AccountsResource(BaseResource):
     async def get_account_jettons_balances(
         self,
         account_id: str,
-        currencies: t.Optional[t.List[str]] = None,
-        supported_extensions: t.Optional[t.List[str]] = None,
+        currencies: list[str] | None = None,
+        supported_extensions: list[str] | None = None,
+        limit: int = 1000,
+        offset: int = 0,
     ) -> JettonsBalances:
-        """
-        Get all Jettons balances by owner address.
+        """Get all Jettons balances by owner address.
 
         :param account_id: Account ID.
         :param currencies: Accept ton and all possible fiat currencies, separated by
             commas.
         :param supported_extensions: Comma separated list supported extensions.
+        :param limit: Limit.
+        :param offset: Offset.
         :return: JettonsBalances
         """
         path = f"/v2/accounts/{account_id}/jettons"
         params = {
             "currencies": currencies,
             "supported_extensions": supported_extensions,
+            "limit": limit,
+            "offset": offset,
         }
         return await self._request(
             method="GET",
@@ -111,11 +115,10 @@ class AccountsResource(BaseResource):
         self,
         account_id: str,
         jetton_id: str,
-        currencies: t.Optional[t.List[str]] = None,
-        supported_extensions: t.Optional[t.List[str]] = None,
+        currencies: list[str] | None = None,
+        supported_extensions: list[str] | None = None,
     ) -> JettonBalance:
-        """
-        Get Jetton balance by owner address.
+        """Get Jetton balance by owner address.
 
         :param account_id: Account ID.
         :param jetton_id: Jetton ID.
@@ -140,10 +143,9 @@ class AccountsResource(BaseResource):
         self,
         account_id: str,
         limit: int,
-        before_lt: t.Optional[int] = None,
+        before_lt: int | None = None,
     ) -> JettonOperations:
-        """
-        Get the transfer jettons history for account.
+        """Get the transfer jettons history for account.
 
         :param account_id: Account ID.
         :param before_lt: Omit this parameter to get last events.
@@ -167,13 +169,12 @@ class AccountsResource(BaseResource):
         account_id: str,
         jetton_id: str,
         limit: int,
-        before_lt: t.Optional[int] = None,
-        start_date: t.Optional[int] = None,
-        end_date: t.Optional[int] = None,
-        accept_language: t.Optional[str] = None,
+        before_lt: int | None = None,
+        start_date: int | None = None,
+        end_date: int | None = None,
+        accept_language: str | None = None,
     ) -> AccountEvents:
-        """
-        Please use `getJettonAccountHistoryByID`` instead.
+        """Please use `getJettonAccountHistoryByID`` instead.
 
         :param account_id: Account ID.
         :param jetton_id: Jetton ID.
@@ -203,13 +204,12 @@ class AccountsResource(BaseResource):
     async def get_account_nft_items(
         self,
         account_id: str,
-        collection: t.Optional[str] = None,
+        collection: str | None = None,
         limit: int = 1000,
         offset: int = 0,
         indirect_ownership: bool = False,
     ) -> NftItems:
-        """
-        Get all NFT items by owner address.
+        """Get all NFT items by owner address.
 
         :param account_id: Account ID.
         :param collection: Nft collection.
@@ -240,20 +240,14 @@ class AccountsResource(BaseResource):
         limit: int,
         initiator: bool = False,
         subject_only: bool = False,
-        after_lt: t.Optional[int] = None,
-        before_lt: t.Optional[int] = None,
-        start_date: t.Optional[int] = None,
-        end_date: t.Optional[int] = None,
+        after_lt: int | None = None,
+        before_lt: int | None = None,
+        start_date: int | None = None,
+        end_date: int | None = None,
         sort_order: str = "desc",
-        accept_language: t.Optional[str] = None,
+        accept_language: str | None = None,
     ) -> AccountEvents:
-        """
-        Get events for an account. Each event is built on top of a trace which is a
-        series of transactions caused by one inbound message. TonAPI looks for known
-        patterns inside the trace and splits the trace into actions, where a single
-        action represents a meaningful high-level operation like a Jetton Transfer or an
-        NFT Purchase. Actions are expected to be shown to users. It is advised not to
-        build any logic on top of actions because actions can be changed at any time.
+        """Get events for an account. Each event is built on top of a trace which is a series of transactions caused by one inbound message. TonAPI looks for known patterns inside the trace and splits the trace into actions, where a single action represents a meaningful high-level operation like a Jetton Transfer or an NFT Purchase. Actions are expected to be shown to users. It is advised not to build any logic on top of actions because actions can be changed at any time.
 
         :param account_id: Account ID.
         :param initiator: Show only events that are initiated by this account.
@@ -293,10 +287,9 @@ class AccountsResource(BaseResource):
         account_id: str,
         event_id: str,
         subject_only: bool = False,
-        accept_language: t.Optional[str] = None,
+        accept_language: str | None = None,
     ) -> AccountEvent:
-        """
-        Get event for an account by event_id.
+        """Get event for an account by event_id.
 
         :param account_id: Account ID.
         :param event_id: Event ID or transaction hash in hex (without 0x) or base64url
@@ -320,11 +313,10 @@ class AccountsResource(BaseResource):
     async def get_account_traces(
         self,
         account_id: str,
-        before_lt: t.Optional[int] = None,
+        before_lt: int | None = None,
         limit: int = 100,
     ) -> TraceIDs:
-        """
-        Get traces for account.
+        """Get traces for account.
 
         :param account_id: Account ID.
         :param before_lt: Omit this parameter to get last events.
@@ -347,8 +339,7 @@ class AccountsResource(BaseResource):
         self,
         account_id: str,
     ) -> Subscriptions:
-        """
-        Get all subscriptions by wallet address.
+        """Get all subscriptions by wallet address.
 
         :param account_id: Account ID.
         :return: Subscriptions
@@ -364,13 +355,12 @@ class AccountsResource(BaseResource):
         self,
         account_id: str,
     ) -> None:
-        """
-        Update internal cache for a particular account.
+        """Update internal cache for a particular account.
 
         :param account_id: Account ID.
         """
         path = f"/v2/accounts/{account_id}/reindex"
-        return await self._request(
+        await self._request(
             method="POST",
             path=path,
         )
@@ -379,8 +369,7 @@ class AccountsResource(BaseResource):
         self,
         name: str,
     ) -> FoundAccounts:
-        """
-        Search by account domain name.
+        """Search by account domain name.
 
         :param name: Name.
         :return: FoundAccounts
@@ -397,10 +386,9 @@ class AccountsResource(BaseResource):
     async def get_account_dns_expiring(
         self,
         account_id: str,
-        period: t.Optional[int] = None,
+        period: int | None = None,
     ) -> DnsExpiring:
-        """
-        Get expiring account .ton dns.
+        """Get expiring account .ton dns.
 
         :param account_id: Account ID.
         :param period: Number of days before expiration.
@@ -418,12 +406,11 @@ class AccountsResource(BaseResource):
     async def get_account_public_key(
         self,
         account_id: str,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get public key by account id.
+    ) -> t.Any:
+        """Get public key by account id.
 
         :param account_id: Account ID.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/accounts/{account_id}/publickey"
         return await self._request(
@@ -435,8 +422,7 @@ class AccountsResource(BaseResource):
         self,
         account_id: str,
     ) -> Multisigs:
-        """
-        Get account's multisigs.
+        """Get account's multisigs.
 
         :param account_id: Account ID.
         :return: Multisigs
@@ -453,14 +439,13 @@ class AccountsResource(BaseResource):
         account_id: str,
         start_date: int,
         end_date: int,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get account's balance change.
+    ) -> t.Any:
+        """Get account's balance change.
 
         :param account_id: Account ID.
         :param start_date: Start date.
         :param end_date: End date.
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = f"/v2/accounts/{account_id}/diff"
         params = {
@@ -478,13 +463,12 @@ class AccountsResource(BaseResource):
         account_id: str,
         id: int,
         limit: int,
-        before_lt: t.Optional[int] = None,
-        start_date: t.Optional[int] = None,
-        end_date: t.Optional[int] = None,
-        accept_language: t.Optional[str] = None,
+        before_lt: int | None = None,
+        start_date: int | None = None,
+        end_date: int | None = None,
+        accept_language: str | None = None,
     ) -> AccountEvents:
-        """
-        Get the transfer history of extra currencies for an account.
+        """Get the transfer history of extra currencies for an account.
 
         :param account_id: Account ID.
         :param id: Extra currency id.
@@ -516,12 +500,11 @@ class AccountsResource(BaseResource):
         account_id: str,
         jetton_id: str,
         limit: int,
-        before_lt: t.Optional[int] = None,
-        start_date: t.Optional[int] = None,
-        end_date: t.Optional[int] = None,
+        before_lt: int | None = None,
+        start_date: int | None = None,
+        end_date: int | None = None,
     ) -> JettonOperations:
-        """
-        Get the transfer jetton history for account and jetton.
+        """Get the transfer jetton history for account and jetton.
 
         :param account_id: Account ID.
         :param jetton_id: Jetton ID.
@@ -548,12 +531,11 @@ class AccountsResource(BaseResource):
     async def emulate_message_to_account_event(
         self,
         account_id: str,
-        body: t.Dict[str, t.Any],
-        ignore_signature_check: t.Optional[bool] = None,
-        accept_language: t.Optional[str] = None,
+        body: dict[str, t.Any],
+        ignore_signature_check: bool | None = None,
+        accept_language: str | None = None,
     ) -> AccountEvent:
-        """
-        Emulate sending message to retrieve account-specific events.
+        """Emulate sending message to retrieve account-specific events.
 
         :param account_id: Account ID.
         :param body: Request body.

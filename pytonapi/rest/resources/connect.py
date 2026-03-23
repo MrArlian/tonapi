@@ -9,13 +9,14 @@ from pytonapi.rest.resources._base import BaseResource
 
 
 class ConnectResource(BaseResource):
+    """ConnectResource resource group."""
+
     async def get_ton_connect_payload(
         self,
-    ) -> t.Dict[str, t.Any]:
-        """
-        Get a payload for further token receipt.
+    ) -> t.Any:
+        """Get a payload for further token receipt.
 
-        :return: t.Dict[str, t.Any]
+        :return: dict[str, t.Any]
         """
         path = "/v2/tonconnect/payload"
         return await self._request(
@@ -25,10 +26,9 @@ class ConnectResource(BaseResource):
 
     async def get_account_info_by_state_init(
         self,
-        body: t.Dict[str, t.Any],
+        body: dict[str, t.Any],
     ) -> AccountInfoByStateInit:
-        """
-        Get account info by state init.
+        """Get account info by state init.
 
         :param body: Request body.
         :return: AccountInfoByStateInit
