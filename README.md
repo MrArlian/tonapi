@@ -3,10 +3,10 @@
 [![TON](https://img.shields.io/badge/TON-grey?logo=TON&logoColor=40AEF0)](https://ton.org)
 ![Python Versions](https://img.shields.io/badge/Python-3.10%20--%203.14-black?color=FFE873&labelColor=3776AB)
 [![PyPI](https://img.shields.io/pypi/v/pytonapi.svg?color=FFE873&labelColor=3776AB)](https://pypi.python.org/pypi/pytonapi)
-[![License](https://img.shields.io/github/license/nessshon/tonapi)](LICENSE)
+[![License](https://img.shields.io/github/license/nessshon/tonapi)](https://github.com/nessshon/tonapi/blob/main/LICENSE)
 [![Donate](https://img.shields.io/badge/Donate-TON-blue)](https://tonviewer.com/UQCZq3_Vd21-4y4m7Wc-ej9NFOhh_qvdfAkAYAOHoQ__Ness)
 
-![Image](assets/banner.png)
+![Image](https://raw.githubusercontent.com/nessshon/tonapi/main/assets/banner.png)
 
 ![Downloads](https://pepy.tech/badge/pytonapi)
 ![Downloads](https://pepy.tech/badge/pytonapi/month)
@@ -39,26 +39,26 @@ pip install pytonapi
 
 **REST API**
 
-- [Get account info](examples/get_account_info.py)
-- [Get account transactions](examples/get_account_transactions.py)
-- [Get NFTs by owner](examples/get_nft_by_owner.py)
-- [Get NFTs by collection](examples/get_nft_by_collection.py)
+- [Get account info](https://github.com/nessshon/tonapi/blob/main/examples/get_account_info.py)
+- [Get account transactions](https://github.com/nessshon/tonapi/blob/main/examples/get_account_transactions.py)
+- [Get NFTs by owner](https://github.com/nessshon/tonapi/blob/main/examples/get_nft_by_owner.py)
+- [Get NFTs by collection](https://github.com/nessshon/tonapi/blob/main/examples/get_nft_by_collection.py)
 
 **Streaming** (SSE & WebSocket)
 
-- [SSE subscriptions](examples/streaming_sse.py)
-- [WebSocket subscriptions](examples/streaming_websocket.py)
+- [SSE subscriptions](https://github.com/nessshon/tonapi/blob/main/examples/streaming_sse.py)
+- [WebSocket subscriptions](https://github.com/nessshon/tonapi/blob/main/examples/streaming_websocket.py)
 
 **Webhooks**
 
-- [FastAPI webhook server](examples/webhook_fastapi.py)
-- [aiohttp webhook server](examples/webhook_aiohttp.py)
+- [FastAPI webhook server](https://github.com/nessshon/tonapi/blob/main/examples/webhook_fastapi.py)
+- [aiohttp webhook server](https://github.com/nessshon/tonapi/blob/main/examples/webhook_aiohttp.py)
 
 **Transfers** (requires [tonutils](https://github.com/nessshon/tonutils))
 
-- [Transfer TON](examples/transfer_ton.py)
-- [Gasless transfer](examples/transfer_gasless.py)
+- [Transfer TON](https://github.com/nessshon/tonapi/blob/main/examples/transfer_ton.py)
+- [Gasless transfer](https://github.com/nessshon/tonapi/blob/main/examples/transfer_gasless.py)
 
 ## License
 
-This repository is distributed under the [MIT License](LICENSE).
+This repository is distributed under the [MIT License](https://github.com/nessshon/tonapi/blob/main/LICENSE).
