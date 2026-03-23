@@ -32,10 +32,10 @@ class BaseClient:
         base_url: str,
         *,
         timeout: float = 10.0,
-        session: t.Optional[aiohttp.ClientSession] = None,
-        headers: t.Optional[t.Dict[str, str]] = None,
-        cookies: t.Optional[t.Dict[str, str]] = None,
-        retry_policy: t.Optional[RetryPolicy] = DEFAULT_RETRY_POLICY,
+        session: aiohttp.ClientSession | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        retry_policy: RetryPolicy | None = DEFAULT_RETRY_POLICY,
     ) -> None:
         """Initialize the base HTTP client.
 
@@ -55,7 +55,7 @@ class BaseClient:
         self._headers = headers or {}
         self._cookies = cookies or {}
         self._timeout = aiohttp.ClientTimeout(total=timeout)
-        self._session: t.Optional[aiohttp.ClientSession] = session
+        self._session: aiohttp.ClientSession | None = session
 
         self._is_external_session = session is not None
         self._retry_policy = retry_policy
@@ -94,14 +94,14 @@ class BaseClient:
 
     async def __aexit__(
         self,
-        exc_type: t.Optional[t.Type[BaseException]],
-        exc_val: t.Optional[BaseException],
-        exc_tb: t.Optional[t.Any],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: t.Any | None,
     ) -> None:
         """Exit the async context manager."""
         await self.close_session()
 
-    def _build_headers(self) -> t.Dict[str, str]:
+    def _build_headers(self) -> dict[str, str]:
         """Build default request headers.
 
         :return: Merged headers dict.
@@ -114,7 +114,7 @@ class BaseClient:
         return base
 
     @staticmethod
-    def _parse_body(text: str) -> t.Tuple[t.Any, str]:
+    def _parse_body(text: str) -> tuple[t.Any, str]:
         """Parse response text and extract error message.
 
         :param text: Raw response text.
@@ -122,7 +122,7 @@ class BaseClient:
         """
         try:
             data = json.loads(text)
-        except (json.JSONDecodeError,):
+        except json.JSONDecodeError:
             return None, text
 
         if isinstance(data, dict):
@@ -133,16 +133,40 @@ class BaseClient:
 
         return data, str(data)
 
+    @t.overload
     async def request(
         self,
         method: str,
         path: str,
         *,
-        params: t.Optional[t.Dict[str, t.Any]] = None,
-        body: t.Optional[t.Any] = None,
-        headers: t.Optional[t.Dict[str, t.Any]] = None,
-        response_model: t.Optional[t.Type[T]] = None,
-    ) -> t.Any:
+        params: dict[str, t.Any] | None = None,
+        body: t.Any | None = None,
+        headers: dict[str, t.Any] | None = None,
+        response_model: type[T],
+    ) -> T: ...
+
+    @t.overload
+    async def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, t.Any] | None = None,
+        body: t.Any | None = None,
+        headers: dict[str, t.Any] | None = None,
+        response_model: None = None,
+    ) -> t.Any: ...
+
+    async def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, t.Any] | None = None,
+        body: t.Any | None = None,
+        headers: dict[str, t.Any] | None = None,
+        response_model: type[T] | None = None,
+    ) -> T | t.Any:
         """Execute an HTTP request with retry.
 
         :param method: HTTP method (``GET``, ``POST``, etc.).
@@ -167,8 +191,8 @@ class BaseClient:
             raise TONAPISessionNotCreatedError(self.__class__.__name__)
 
         session = self._session
-        last_error: t.Optional[Exception] = None
-        last_status: t.Optional[int] = None
+        last_error: Exception | None = None
+        last_status: int | None = None
         max_attempts = 1
 
         if self._retry_policy:
@@ -207,9 +231,9 @@ class BaseClient:
                     content_type = response.headers.get("Content-Type", "")
                     raise_for_status(response.status, text, content_type)
 
-            except (TONAPIError,):
+            except TONAPIError:
                 raise
-            except (aiohttp.ClientError,) as exc:
+            except aiohttp.ClientError as exc:
                 last_error = exc
                 if attempt < max_attempts - 1:
                     await asyncio.sleep(1.0)
@@ -227,7 +251,7 @@ class BaseClient:
     async def _handle_success(
         self,
         response: aiohttp.ClientResponse,
-        response_model: t.Optional[t.Type[T]],
+        response_model: type[T] | None,
     ) -> t.Any:
         """Process a successful (2xx) response.
 

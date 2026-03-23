@@ -2,7 +2,6 @@ import base64
 import binascii
 import decimal
 import struct
-import typing as t
 
 __all__ = [
     "raw_to_userfriendly",
@@ -104,7 +103,7 @@ def userfriendly_to_raw(address: str) -> str:
 
 
 def to_nano(
-    value: t.Union[int, float, str, decimal.Decimal],
+    value: int | float | str | decimal.Decimal,
     decimals: int = 9,
 ) -> int:
     """Convert human-readable token amount to the smallest units (nanotons).
@@ -134,7 +133,7 @@ def to_amount(
     value: int,
     decimals: int = 9,
     *,
-    precision: t.Optional[int] = None,
+    precision: int | None = None,
 ) -> decimal.Decimal:
     """Convert the smallest units (nanotons) to human-readable decimal amount.
 

@@ -99,13 +99,13 @@ class Opcode(str, Enum):
     MULTISIG_EXECUTE_INTERNAL = "0xa32c59bf"
 
 
-NETWORK_BASE_URLS: t.Final[t.Dict[Network, str]] = {
+NETWORK_BASE_URLS: t.Final[dict[Network, str]] = {
     Network.MAINNET: "https://tonapi.io",
     Network.TESTNET: "https://testnet.tonapi.io",
     Network.TETRA: "https://tetra.tonapi.io",
 }
 
-WEBHOOK_BASE_URLS: t.Final[t.Dict[Network, str]] = {
+WEBHOOK_BASE_URLS: t.Final[dict[Network, str]] = {
     Network.MAINNET: "https://rt.tonapi.io",
     Network.TESTNET: "https://rt-testnet.tonapi.io",
 }
@@ -121,9 +121,10 @@ class RetryRule:
         base_delay: initial delay in seconds before first retry.
         max_delay: upper bound for the delay after backoff.
         backoff_factor: multiplier applied to delay on each retry.
+
     """
 
-    statuses: t.FrozenSet[int]
+    statuses: frozenset[int]
     max_retries: int = 3
     base_delay: float = 1.0
     max_delay: float = 30.0
@@ -145,11 +146,12 @@ class RetryPolicy:
 
     Attributes:
         rules: retry rules to apply.
+
     """
 
-    rules: t.Tuple[RetryRule, ...] = field(default_factory=tuple)
+    rules: tuple[RetryRule, ...] = field(default_factory=tuple)
 
-    def find_rule(self, status: int) -> t.Optional[RetryRule]:
+    def find_rule(self, status: int) -> RetryRule | None:
         """Find a retry rule matching the given status code.
 
         :param status: HTTP status code.
@@ -170,6 +172,7 @@ class ReconnectPolicy:
         delay: initial delay in seconds before first reconnect.
         max_delay: upper bound for the delay after backoff.
         backoff_factor: multiplier applied to delay on each reconnect.
+
     """
 
     max_reconnects: int = 10

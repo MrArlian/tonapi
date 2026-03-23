@@ -34,8 +34,7 @@ class TONAPIError(Exception):
 
 
 class TONAPIConnectionError(TONAPIError):
-    """Network-level error — DNS resolution failure, connection timeout,
-    refused connection, or other transport issues."""
+    """Network-level error (DNS failure, timeout, refused connection)."""
 
 
 class TONAPIStatusError(TONAPIError):
@@ -127,15 +126,15 @@ class TONAPIRetryLimitError(TONAPIError):
     """All retry attempts have been exhausted."""
 
     attempts: int
-    last_status: t.Optional[int]
-    last_error: t.Optional[Exception]
+    last_status: int | None
+    last_error: Exception | None
 
     def __init__(
         self,
         *,
         attempts: int,
-        last_status: t.Optional[int] = None,
-        last_error: t.Optional[Exception] = None,
+        last_status: int | None = None,
+        last_error: Exception | None = None,
     ) -> None:
         self.attempts = attempts
         self.last_status = last_status
@@ -148,13 +147,13 @@ class TONAPIRetryLimitError(TONAPIError):
         super().__init__(", ".join(parts))
 
 
-STREAMING_RECOVERABLE: t.Final[t.Tuple[t.Type[TONAPIError], ...]] = (
+STREAMING_RECOVERABLE: t.Final[tuple[type[TONAPIError], ...]] = (
     TONAPIServerError,
     TONAPITooManyRequestsError,
     TONAPIStreamingError,
 )
 
-TONAPI_STATUS_TO_EXCEPTION: t.Final[t.Dict[int, t.Type[TONAPIStatusError]]] = {
+TONAPI_STATUS_TO_EXCEPTION: t.Final[dict[int, type[TONAPIStatusError]]] = {
     400: TONAPIBadRequestError,
     401: TONAPIUnauthorizedError,
     403: TONAPIForbiddenError,
@@ -180,7 +179,7 @@ def raise_for_status(status: int, body: str, content_type: str = "") -> None:
     else:
         try:
             data = json.loads(body)
-        except (json.JSONDecodeError,):
+        except json.JSONDecodeError:
             message = body
         else:
             if isinstance(data, dict):
