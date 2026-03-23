@@ -52,9 +52,9 @@ class AccountSubscription(BaseModel):
 
     account_id: str
     last_delivered_lt: int
-    failed_at: t.Optional[str] = None
-    failed_lt: t.Optional[int] = None
-    failed_attempts: t.Optional[int] = None
+    failed_at: str | None = None
+    failed_lt: int | None = None
+    failed_attempts: int | None = None
 
 
 class WebhookInfo(BaseModel):

@@ -17,6 +17,9 @@ from pytonapi.webhook.models import (
     WebhookInfo,
 )
 
+if t.TYPE_CHECKING:
+    import builtins
+
 
 class TonapiWebhookClient(BaseClient):
     """Async client for the TONAPI TonapiWebhooks API."""
@@ -26,12 +29,12 @@ class TonapiWebhookClient(BaseClient):
         api_key: str,
         network: Network,
         *,
-        base_url: t.Optional[str] = None,
+        base_url: str | None = None,
         timeout: float = 10.0,
-        session: t.Optional[aiohttp.ClientSession] = None,
-        headers: t.Optional[t.Dict[str, str]] = None,
-        cookies: t.Optional[t.Dict[str, str]] = None,
-        retry_policy: t.Optional[RetryPolicy] = DEFAULT_RETRY_POLICY,
+        session: aiohttp.ClientSession | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        retry_policy: RetryPolicy | None = DEFAULT_RETRY_POLICY,
     ) -> None:
         """Initialize the TONAPI TonapiWebhooks client.
 
@@ -69,7 +72,7 @@ class TonapiWebhookClient(BaseClient):
         )
         return TonapiWebhook(self, data["webhook_id"], endpoint, data["token"])
 
-    async def list(self) -> t.List[WebhookInfo]:
+    async def list(self) -> builtins.list[WebhookInfo]:
         """List all configured webhooks.
 
         :return: List of ``WebhookInfo`` objects.
@@ -145,7 +148,7 @@ class TonapiWebhook:
 
     async def subscribe(
         self,
-        accounts: t.List[str],
+        accounts: list[str],
     ) -> None:
         """Subscribe to account transactions.
 
@@ -159,7 +162,7 @@ class TonapiWebhook:
 
     async def unsubscribe(
         self,
-        accounts: t.List[str],
+        accounts: list[str],
     ) -> None:
         """Unsubscribe from account transactions.
 
@@ -175,7 +178,7 @@ class TonapiWebhook:
         self,
         offset: int = 0,
         limit: int = 10,
-    ) -> t.List[AccountSubscription]:
+    ) -> list[AccountSubscription]:
         """Get account transaction subscriptions for this webhook.
 
         :param offset: Pagination offset.
@@ -242,7 +245,7 @@ class TonapiWebhook:
 
     async def sync_accounts(
         self,
-        accounts: t.List[str],
+        accounts: list[str],
     ) -> None:
         """Sync account subscriptions — subscribe missing, unsubscribe extra.
 
@@ -260,12 +263,12 @@ class TonapiWebhook:
         if to_remove:
             await self.unsubscribe(list(to_remove))
 
-    async def _get_all_subscriptions(self) -> t.List[AccountSubscription]:
+    async def _get_all_subscriptions(self) -> list[AccountSubscription]:
         """Fetch all account subscriptions using pagination.
 
         :return: Complete list of ``AccountSubscription`` objects.
         """
-        all_subs: t.List[AccountSubscription] = []
+        all_subs: list[AccountSubscription] = []
         offset = 0
         limit = 100
         while True:

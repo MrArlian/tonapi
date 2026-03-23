@@ -9,23 +9,23 @@ from pydantic import TypeAdapter
 from pytonapi.exceptions import TONAPIError
 from pytonapi.webhook.models import (
     AccountTxEvent,
-    WebhookEventType,
     MempoolMsgEvent,
     NewContractsEvent,
     OpcodeMsgEvent,
+    WebhookEventType,
 )
 
 if t.TYPE_CHECKING:
-    from pytonapi.webhook.client import TonapiWebhookClient, TonapiWebhook
+    from pytonapi.webhook.client import TonapiWebhookClient
 
-_EVENT_TYPES: t.Dict[WebhookEventType, t.Type] = {
+_EVENT_TYPES: dict[WebhookEventType, type] = {
     WebhookEventType.ACCOUNT_TX: AccountTxEvent,
     WebhookEventType.MEMPOOL_MSG: MempoolMsgEvent,
     WebhookEventType.OPCODE_MSG: OpcodeMsgEvent,
     WebhookEventType.NEW_CONTRACTS: NewContractsEvent,
 }
 
-_ADAPTERS: t.Dict[WebhookEventType, TypeAdapter] = {
+_ADAPTERS: dict[WebhookEventType, TypeAdapter[t.Any]] = {
     key: TypeAdapter(cls) for key, cls in _EVENT_TYPES.items()
 }
 
@@ -33,7 +33,7 @@ _ADAPTERS: t.Dict[WebhookEventType, TypeAdapter] = {
 class TonapiWebhookDispatcher:
     """Path-based event dispatcher for incoming webhook notifications."""
 
-    DEFAULT_SUFFIXES: t.ClassVar[t.Dict[WebhookEventType, str]] = {
+    DEFAULT_SUFFIXES: t.ClassVar[dict[WebhookEventType, str]] = {
         WebhookEventType.ACCOUNT_TX: "/account-tx",
         WebhookEventType.MEMPOOL_MSG: "/mempool-msg",
         WebhookEventType.OPCODE_MSG: "/opcode-msg",
@@ -44,9 +44,9 @@ class TonapiWebhookDispatcher:
         self,
         url: str = "",
         *,
-        client: t.Optional[TonapiWebhookClient] = None,
-        accounts: t.Optional[t.List[str]] = None,
-        opcodes: t.Optional[t.List[str]] = None,
+        client: TonapiWebhookClient | None = None,
+        accounts: list[str] | None = None,
+        opcodes: list[str] | None = None,
         **kwargs: t.Any,
     ) -> None:
         """Initialize the webhook dispatcher.
@@ -63,21 +63,21 @@ class TonapiWebhookDispatcher:
         self._client = client
         self._url = url.rstrip("/")
         self._path = urlparse(self._url).path
-        self._accounts: t.Set[str] = set(accounts) if accounts else set()
-        self._opcodes: t.Set[str] = set(opcodes) if opcodes else set()
-        self._defaults: t.Dict[str, t.Any] = kwargs
+        self._accounts: set[str] = set(accounts) if accounts else set()
+        self._opcodes: set[str] = set(opcodes) if opcodes else set()
+        self._defaults: dict[str, t.Any] = kwargs
 
         # path -> secret token (populated by setup)
-        self._tokens: t.Dict[str, str] = {}
+        self._tokens: dict[str, str] = {}
 
         # event_type -> list of (account_filter, handler, path)
-        self._handlers: t.Dict[
+        self._handlers: dict[
             WebhookEventType,
-            t.List[t.Tuple[t.Optional[t.FrozenSet[str]], t.Callable[..., t.Any], str]],
+            list[tuple[frozenset[str] | None, t.Callable[..., t.Any], str]],
         ] = {et: [] for et in WebhookEventType}
 
         # path -> event_type (built lazily on first process call)
-        self._path_map: t.Optional[t.Dict[str, WebhookEventType]] = None
+        self._path_map: dict[str, WebhookEventType] | None = None
 
     @property
     def url(self) -> str:
@@ -85,12 +85,12 @@ class TonapiWebhookDispatcher:
         return self._url
 
     @property
-    def accounts(self) -> t.FrozenSet[str]:
+    def accounts(self) -> frozenset[str]:
         """Account IDs to subscribe to."""
         return frozenset(self._accounts)
 
     @property
-    def opcodes(self) -> t.FrozenSet[str]:
+    def opcodes(self) -> frozenset[str]:
         """Opcodes to subscribe to."""
         return frozenset(self._opcodes)
 
@@ -164,7 +164,7 @@ class TonapiWebhookDispatcher:
         await self._client.close_session()
 
     @property
-    def paths(self) -> t.Dict[WebhookEventType, str]:
+    def paths(self) -> dict[WebhookEventType, str]:
         """Mapping of event types to their resolved paths.
 
         Only includes event types that have at least one handler registered.
@@ -183,7 +183,7 @@ class TonapiWebhookDispatcher:
         """
         return self._path + self.DEFAULT_SUFFIXES[event_type]
 
-    def _build_path_map(self) -> t.Dict[str, WebhookEventType]:
+    def _build_path_map(self) -> dict[str, WebhookEventType]:
         """Build reverse mapping from path to event type."""
         return {
             handlers[0][2]: et for et, handlers in self._handlers.items() if handlers
@@ -192,7 +192,7 @@ class TonapiWebhookDispatcher:
     def account_tx(
         self,
         *accounts: str,
-        path: t.Optional[str] = None,
+        path: str | None = None,
     ) -> t.Callable[[t.Callable[..., t.Any]], t.Callable[..., t.Any]]:
         """Register a handler for account transaction events.
 
@@ -206,7 +206,7 @@ class TonapiWebhookDispatcher:
     def mempool_msg(
         self,
         *,
-        path: t.Optional[str] = None,
+        path: str | None = None,
     ) -> t.Callable[[t.Callable[..., t.Any]], t.Callable[..., t.Any]]:
         """Register a handler for mempool message events.
 
@@ -218,7 +218,7 @@ class TonapiWebhookDispatcher:
     def opcode_msg(
         self,
         *accounts: str,
-        path: t.Optional[str] = None,
+        path: str | None = None,
     ) -> t.Callable[[t.Callable[..., t.Any]], t.Callable[..., t.Any]]:
         """Register a handler for opcode subscription events.
 
@@ -232,7 +232,7 @@ class TonapiWebhookDispatcher:
     def new_contracts(
         self,
         *accounts: str,
-        path: t.Optional[str] = None,
+        path: str | None = None,
     ) -> t.Callable[[t.Callable[..., t.Any]], t.Callable[..., t.Any]]:
         """Register a handler for new contract deployment events.
 
@@ -248,7 +248,7 @@ class TonapiWebhookDispatcher:
         event_type: WebhookEventType,
         handler: t.Callable[..., t.Any],
         *accounts: str,
-        path: t.Optional[str] = None,
+        path: str | None = None,
     ) -> None:
         """Register a handler without using a decorator.
 
@@ -271,9 +271,9 @@ class TonapiWebhookDispatcher:
     async def process(
         self,
         path: str,
-        data: t.Dict[str, t.Any],
+        data: dict[str, t.Any],
         *,
-        authorization: t.Optional[str] = None,
+        authorization: str | None = None,
         **kwargs: t.Any,
     ) -> None:
         """Parse an incoming event and dispatch to matching handlers.
@@ -293,25 +293,23 @@ class TonapiWebhookDispatcher:
             raise TONAPIError(f"Unknown webhook path: {path}")
 
         expected_token = self._tokens.get(path)
-        if expected_token is not None:
-            if authorization != f"Bearer {expected_token}":
-                raise TONAPIError("Invalid webhook token")
+        if expected_token is not None and authorization != f"Bearer {expected_token}":
+            raise TONAPIError("Invalid webhook token")
 
         adapter = _ADAPTERS[event_type]
         event = adapter.validate_python(data)
         merged = {**self._defaults, **kwargs}
 
         for account_filter, handler, _ in self._handlers[event_type]:
-            if account_filter is not None and hasattr(event, "account_id"):
-                if event.account_id not in account_filter:
-                    continue
+            if account_filter is not None and hasattr(event, "account_id") and event.account_id not in account_filter:
+                continue
             await self._call_handler(handler, event, merged)
 
     @staticmethod
     async def _call_handler(
         handler: t.Callable[..., t.Any],
         event: t.Any,
-        dependencies: t.Dict[str, t.Any],
+        dependencies: dict[str, t.Any],
     ) -> None:
         """Call a handler, injecting only the parameters it accepts.
 
@@ -320,9 +318,9 @@ class TonapiWebhookDispatcher:
         :param dependencies: Available keyword arguments.
         """
         sig = inspect.signature(handler)
-        inject: t.Dict[str, t.Any] = {}
+        inject: dict[str, t.Any] = {}
         first = True
-        for name, param in sig.parameters.items():
+        for name in sig.parameters:
             if first:
                 inject[name] = event
                 first = False
@@ -336,8 +334,8 @@ class TonapiWebhookDispatcher:
     def _make_decorator(
         self,
         event_type: WebhookEventType,
-        accounts: t.Tuple[str, ...],
-        path: t.Optional[str],
+        accounts: tuple[str, ...],
+        path: str | None,
     ) -> t.Callable[[t.Callable[..., t.Any]], t.Callable[..., t.Any]]:
         """Create a decorator for registering event handlers.
 
