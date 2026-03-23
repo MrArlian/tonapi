@@ -1,5 +1,4 @@
 import shutil
-import typing as t
 from pathlib import Path
 
 from codegen.formatter import run_ruff
@@ -10,6 +9,7 @@ from codegen.spec import (
     param_python_type,
     resolve_parameter,
     resolve_ref,
+    resolve_request_body,
     resolve_response_type,
 )
 from codegen.utils import (
@@ -25,7 +25,7 @@ from codegen.utils import (
 
 TESTS_DIR: Path = ROOT / "tests" / "rest"
 
-PLACEHOLDER_DEFAULTS: t.Dict[str, str] = {
+PLACEHOLDER_DEFAULTS: dict[str, str] = {
     "str": '""',
     "int": "0",
     "float": "0.0",
@@ -39,7 +39,7 @@ def _default_value(type_str: str) -> str:
     :param type_str: Python type annotation string.
     :return: placeholder value literal.
     """
-    if type_str.startswith("t.List["):
+    if type_str.startswith("list["):
         return "[]"
     return PLACEHOLDER_DEFAULTS.get(type_str, '""')
 
@@ -47,7 +47,7 @@ def _default_value(type_str: str) -> str:
 def _schema_to_example(
     schema: dict,
     spec: dict,
-    _seen: t.Optional[t.Set[str]] = None,
+    _seen: set[str] | None = None,
 ) -> str:
     """Build a Python literal from a JSON Schema, like Swagger UI does.
 
@@ -134,7 +134,7 @@ def _collect_method_info(
     operation: dict,
     spec: dict,
     tag: str,
-    overrides: t.Dict[str, str],
+    overrides: dict[str, str],
 ) -> dict:
     """Extract method name, required call args, and response type.
 
@@ -153,7 +153,7 @@ def _collect_method_info(
     raw_params = operation.get("parameters", [])
     params = [resolve_parameter(p, spec) for p in raw_params]
 
-    call_args: t.List[t.Tuple[str, str]] = []
+    call_args: list[tuple[str, str]] = []
 
     for p in params:
         if p.get("in") == "path":
@@ -171,18 +171,9 @@ def _collect_method_info(
             ptype = param_python_type(p.get("schema", {}))
             call_args.append((py_name, _default_value(ptype)))
 
-    has_body = False
-    body_example = "{}"
-    if "requestBody" in operation:
-        has_body = True
-        rb = operation["requestBody"]
-        if "$ref" in rb:
-            rb = resolve_ref(rb["$ref"], spec)
-        content = rb.get("content", {})
-        for _, media in content.items():
-            schema = media.get("schema", {})
-            body_example = _schema_to_example(schema, spec)
-            break
+    body_schema = resolve_request_body(operation, spec)
+    has_body = body_schema is not None
+    body_example = _schema_to_example(body_schema, spec) if body_schema else "{}"
 
     response_type = resolve_response_type(operation, spec)
 
@@ -200,11 +191,11 @@ def run() -> None:
     spec = load_spec()
     config = load_config()
     overrides = config.get("method_names", {})
-    skip_tests: t.Set[str] = set(config.get("skip_tests", []))
+    skip_tests: set[str] = set(config.get("skip_tests", []))
 
     tag_endpoints = group_endpoints_by_tag(spec)
 
-    tag_methods: t.Dict[str, t.List[dict]] = {}
+    tag_methods: dict[str, list[dict]] = {}
     for tag in sorted(tag_endpoints):
         methods = []
         for _, _, operation in tag_endpoints[tag]:
@@ -233,13 +224,13 @@ def run() -> None:
     TESTS_DIR.mkdir(parents=True)
 
     # --- Generate fixtures.py ---
-    fixtures_entries: t.List[t.Tuple[str, t.List[t.Tuple[str, str]], bool]] = []
+    fixtures_entries: list[tuple[str, list[tuple[str, str]], bool]] = []
     for tag in sorted(tag_methods):
         module = tag_to_module_name(tag)
         for m in tag_methods[tag]:
             if not m["call_args"] and not m["has_body"]:
                 continue
-            entry_params: t.List[t.Tuple[str, str]] = []
+            entry_params: list[tuple[str, str]] = []
             for arg_name, arg_default in m["call_args"]:
                 entry_params.append((arg_name, arg_default))
             if m["has_body"]:
@@ -267,11 +258,11 @@ def run() -> None:
         class_name = tag_to_class_name(tag)
         methods = tag_methods[tag]
 
-        model_imports: t.Set[str] = set()
+        model_imports: set[str] = set()
         for m in methods:
             if m["response_type"] and m["response_type"] not in NON_MODEL_TYPES:
                 model_imports.add(m["response_type"])
-            if m["response_type"] == "t.Dict[str, t.Any]":
+            if m["response_type"] == "dict[str, t.Any]":
                 m["response_type"] = "dict"
 
         has_active = any(not m.get("skipped") for m in methods)

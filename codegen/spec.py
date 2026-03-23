@@ -1,4 +1,3 @@
-import typing as t
 from collections import defaultdict
 
 from codegen.utils import TYPE_MAP, to_snake_case
@@ -58,11 +57,11 @@ def param_python_type(schema: dict) -> str:
             schema.get("items", {}).get("type", "string"),
             "str",
         )
-        return f"t.List[{items_type}]"
+        return f"list[{items_type}]"
     return TYPE_MAP.get(type_, "str")
 
 
-def param_default(param: dict) -> t.Optional[str]:
+def param_default(param: dict) -> str | None:
     """Extract the default value literal for a parameter.
 
     :param param: resolved parameter dictionary.
@@ -79,10 +78,29 @@ def param_default(param: dict) -> t.Optional[str]:
     return None
 
 
+def resolve_request_body(operation: dict, spec: dict) -> dict | None:
+    """Resolve the ``requestBody`` media schema from an operation.
+
+    :param operation: OpenAPI operation dictionary.
+    :param spec: full OpenAPI spec dictionary.
+    :return: body media schema dict, or ``None`` if no body.
+    """
+    if "requestBody" not in operation:
+        return None
+    rb = operation["requestBody"]
+    if "$ref" in rb:
+        rb = resolve_ref(rb["$ref"], spec)
+    content = rb.get("content", {})
+    if not content:
+        return None
+    media = next(iter(content.values()))
+    return media.get("schema") or None
+
+
 def resolve_response_type(
     operation: dict,
     spec: dict,
-) -> t.Optional[str]:
+) -> str | None:
     """Determine the response model name from a ``200`` response.
 
     :param operation: OpenAPI operation dictionary.
@@ -101,7 +119,7 @@ def resolve_response_type(
         schema = media.get("schema", {})
         if schema.get("format") == "binary":
             return "bytes" if ct == "application/octet-stream" else "str"
-        return "t.Dict[str, t.Any]"
+        return "dict[str, t.Any]"
 
     schema = media.get("schema", {})
     if "$ref" in schema:
@@ -109,13 +127,13 @@ def resolve_response_type(
     type_name = schema.get("type")
     if type_name in TYPE_MAP:
         return TYPE_MAP[type_name]
-    return "t.Dict[str, t.Any]"
+    return "dict[str, t.Any]"
 
 
 def operation_to_method_name(
     operation_id: str,
     tag: str,
-    overrides: t.Dict[str, str],
+    overrides: dict[str, str],
 ) -> str:
     """Convert an ``operationId`` to a Python method name.
 
@@ -138,13 +156,13 @@ def operation_to_method_name(
     return name
 
 
-def collect_refs(obj: object) -> t.Set[str]:
+def collect_refs(obj: object) -> set[str]:
     """Recursively collect all ``$ref`` schema names from a schema.
 
     :param obj: schema object to scan.
     :return: set of referenced schema names.
     """
-    refs: t.Set[str] = set()
+    refs: set[str] = set()
     if isinstance(obj, dict):
         if "$ref" in obj:
             refs.add(ref_name(obj["$ref"]))
@@ -159,7 +177,7 @@ def collect_refs(obj: object) -> t.Set[str]:
 def resolve_type(
     prop: dict,
     schemas: dict,
-    enum_names: t.Set[str],
+    enum_names: set[str],
 ) -> str:
     """Resolve an OpenAPI property to a Python type string.
 
@@ -184,19 +202,19 @@ def resolve_type(
     if type_ == "array":
         items = prop.get("items", {})
         if items.get("type") == "object" and "properties" in items:
-            return "t.List[t.Any]"
+            return "list[t.Any]"
         if "enum" in items and items.get("type") == "string":
-            return "t.List[str]"
+            return "list[str]"
         inner = resolve_type(items, schemas, enum_names)
-        return f"t.List[{inner}]"
+        return f"list[{inner}]"
 
     if type_ == "object":
         additional = prop.get("additionalProperties")
         if isinstance(additional, dict):
             val_type = resolve_type(additional, schemas, enum_names)
-            return f"t.Dict[str, {val_type}]"
+            return f"dict[str, {val_type}]"
         if additional:
-            return "t.Dict[str, t.Any]"
+            return "dict[str, t.Any]"
         return "t.Any"
 
     if "enum" in prop:
@@ -205,13 +223,13 @@ def resolve_type(
     return TYPE_MAP.get(type_, "t.Any")
 
 
-def resolve_type_for_ref_check(prop: dict) -> t.Set[str]:
+def resolve_type_for_ref_check(prop: dict) -> set[str]:
     """Collect all referenced model names from a property.
 
     :param prop: property schema.
     :return: set of referenced model class names.
     """
-    refs: t.Set[str] = set()
+    refs: set[str] = set()
     if "$ref" in prop:
         refs.add(ref_name(prop["$ref"]))
     if "allOf" in prop:
@@ -229,7 +247,7 @@ def resolve_type_for_ref_check(prop: dict) -> t.Set[str]:
 
 def group_endpoints_by_tag(
     spec: dict,
-) -> t.Dict[str, t.List[t.Tuple[str, str, dict]]]:
+) -> dict[str, list[tuple[str, str, dict]]]:
     """Group all API endpoints by their tags.
 
     Endpoints with multiple tags are added to every tag group.
@@ -237,7 +255,7 @@ def group_endpoints_by_tag(
     :param spec: full OpenAPI spec dictionary.
     :return: mapping of tag name to list of ``(path, method, operation)`` tuples.
     """
-    tag_endpoints: t.Dict[str, t.List[t.Tuple[str, str, dict]]] = defaultdict(list)
+    tag_endpoints: dict[str, list[tuple[str, str, dict]]] = defaultdict(list)
     for path, path_item in spec.get("paths", {}).items():
         for http_method, operation in path_item.items():
             if not isinstance(operation, dict):

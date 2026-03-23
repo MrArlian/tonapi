@@ -1,7 +1,6 @@
 import json
 import keyword
 import re
-import typing as t
 import urllib.request
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -21,18 +20,18 @@ env: Environment = Environment(
     lstrip_blocks=True,
 )
 
-TYPE_MAP: t.Dict[str, str] = {
+TYPE_MAP: dict[str, str] = {
     "string": "str",
     "integer": "int",
     "number": "float",
     "boolean": "bool",
 }
 
-NON_MODEL_TYPES: t.Set[str] = {
-    "str", "int", "float", "bool", "bytes", "t.Dict[str, t.Any]",
+NON_MODEL_TYPES: set[str] = {
+    "str", "int", "float", "bool", "bytes", "dict[str, t.Any]",
 }
 
-_spec_cache: t.Optional[dict] = None
+_spec_cache: dict | None = None
 
 
 def _fetch_url(url: str, timeout: float = 15.0) -> bytes:
@@ -48,7 +47,7 @@ def _fetch_url(url: str, timeout: float = 15.0) -> bytes:
             url,
             method="GET",
             headers={
-                "User-Agent": "pytonapi-codegen (+https://github.com/nessshon/pytonapi)",
+                "User-Agent": "pytonapi-codegen (+https://github.com/nessshon/tonapi)",
                 "Accept": "application/x-yaml,text/yaml,text/plain,*/*",
             },
         )
@@ -60,7 +59,7 @@ def _fetch_url(url: str, timeout: float = 15.0) -> bytes:
         raise RuntimeError(f"Failed to fetch spec: {e.reason} ({url})") from e
 
 
-def load_spec(source: t.Optional[str] = None) -> dict:
+def load_spec(source: str | None = None) -> dict:
     """Load the OpenAPI specification from a URL or local file.
 
     The result is cached after the first call so that multiple
@@ -80,20 +79,14 @@ def load_spec(source: t.Optional[str] = None) -> dict:
     if source.startswith(("http://", "https://")):
         print(f"Fetching spec from {source} ...")
         raw = _fetch_url(source)
-        if source.endswith(".json"):
-            _spec_cache = json.loads(raw)
-        else:
-            _spec_cache = yaml.safe_load(raw)
+        _spec_cache = json.loads(raw) if source.endswith(".json") else yaml.safe_load(raw)
     else:
         path = Path(source)
         if not path.exists():
             raise RuntimeError(f"Spec file not found: {path}")
         print(f"Loading spec from {path} ...")
         with open(path) as f:
-            if path.suffix == ".json":
-                _spec_cache = json.load(f)
-            else:
-                _spec_cache = yaml.safe_load(f)
+            _spec_cache = json.load(f) if path.suffix == ".json" else yaml.safe_load(f)
 
     return _spec_cache
 

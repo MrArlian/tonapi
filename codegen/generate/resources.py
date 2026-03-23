@@ -1,5 +1,4 @@
 import textwrap
-import typing as t
 from pathlib import Path
 
 from codegen.formatter import run_ruff
@@ -10,7 +9,7 @@ from codegen.spec import (
     param_python_type,
     ref_name,
     resolve_parameter,
-    resolve_ref,
+    resolve_request_body,
     resolve_response_type,
 )
 from codegen.utils import (
@@ -30,10 +29,10 @@ MAX_LINE_LENGTH: int = 88
 
 def _format_docstring(
         description: str,
-        params: t.List[t.Tuple[str, str]],
-        return_type: t.Optional[str],
+        params: list[tuple[str, str]],
+        return_type: str | None,
         indent: int = 8,
-) -> t.List[str]:
+) -> list[str]:
     """Format a reStructuredText docstring.
 
     :param description: method description text.
@@ -50,6 +49,13 @@ def _format_docstring(
 
     if description:
         description = description.rstrip()
+        description = description.replace("\u2018", "'").replace("\u2019", "'")
+        description = description.replace("\u201c", '"').replace("\u201d", '"')
+        first_space = description.find(" ")
+        if first_space > 0:
+            first_word = description[:first_space]
+            if first_word.endswith("s") and not first_word.endswith(("ss", "us", "is")):
+                description = first_word[:-1] + description[first_space:]
         if not description.endswith("."):
             description += "."
 
@@ -58,12 +64,12 @@ def _format_docstring(
         if len(single) <= MAX_LINE_LENGTH and "\n" not in description:
             return [single]
 
-    lines = [f'{prefix}"""']
+    lines: list[str] = []
 
     if description:
-        wrapped = textwrap.fill(description, width=max_width)
-        for line in wrapped.splitlines():
-            lines.append(f"{prefix}{line}")
+        lines.append(f'{prefix}"""{description}')
+    else:
+        lines.append(f'{prefix}"""')
 
     if description and (params or return_type):
         lines.append("")
@@ -79,13 +85,39 @@ def _format_docstring(
         wrapped = textwrap.fill(
             param_line, width=max_width, subsequent_indent="    ",
         )
-        for line in wrapped.splitlines():
-            lines.append(f"{prefix}{line}")
+        lines.extend(f"{prefix}{line}" for line in wrapped.splitlines())
 
     if return_type:
         lines.append(f"{prefix}:return: {return_type}")
 
     lines.append(f'{prefix}"""')
+    return lines
+
+
+def _build_dict_literal(
+        params: list[dict],
+        param_map: dict[str, str],
+        var_name: str,
+) -> list[str]:
+    """Build a dict literal assignment from API parameters.
+
+    :param params: list of resolved parameter dicts.
+    :param param_map: mapping of API name to Python name.
+    :param var_name: variable name for the assignment.
+    :return: list of code lines.
+    """
+    if not params:
+        return []
+    if len(params) == 1:
+        api_name = params[0]["name"]
+        py_name = param_map[api_name]
+        return [f'        {var_name} = {{"{api_name}": {py_name}}}']
+    lines = [f"        {var_name} = {{"]
+    for p in params:
+        api_name = p["name"]
+        py_name = param_map[api_name]
+        lines.append(f'            "{api_name}": {py_name},')
+    lines.append("        }")
     return lines
 
 
@@ -95,8 +127,8 @@ def _generate_method(
         operation: dict,
         spec: dict,
         tag: str,
-        overrides: t.Dict[str, str],
-) -> t.Tuple[str, t.Set[str]]:
+        overrides: dict[str, str],
+) -> tuple[str, set[str]]:
     """Generate a single async method.
 
     :param path: API path string.
@@ -118,31 +150,24 @@ def _generate_method(
     query_params = [p for p in params if p.get("in") == "query"]
     header_params = [p for p in params if p.get("in") == "header"]
 
-    has_body = "requestBody" in operation
+    body_schema = resolve_request_body(operation, spec)
     body_schema_ref = None
     body_is_raw = False
-    if has_body:
-        rb = operation["requestBody"]
-        if "$ref" in rb:
-            rb = resolve_ref(rb["$ref"], spec)
-        content = rb.get("content", {})
-        for _, media in content.items():
-            schema = media.get("schema", {})
-            if "$ref" in schema:
-                body_schema_ref = ref_name(schema["$ref"])
-            elif schema.get("type") == "object" and "properties" in schema:
-                body_is_raw = True
-            break
+    if body_schema is not None:
+        if "$ref" in body_schema:
+            body_schema_ref = ref_name(body_schema["$ref"])
+        elif body_schema.get("type") == "object" and "properties" in body_schema:
+            body_is_raw = True
 
     response_type = resolve_response_type(operation, spec)
-    model_imports: t.Set[str] = set()
+    model_imports: set[str] = set()
     if response_type and response_type not in NON_MODEL_TYPES:
         model_imports.add(response_type)
 
     sig_params = ["self"]
-    path_param_map: t.Dict[str, str] = {}
-    query_param_map: t.Dict[str, str] = {}
-    header_param_map: t.Dict[str, str] = {}
+    path_param_map: dict[str, str] = {}
+    query_param_map: dict[str, str] = {}
+    header_param_map: dict[str, str] = {}
 
     for p in path_params:
         api_name = p["name"]
@@ -155,10 +180,10 @@ def _generate_method(
         model_imports.add(body_schema_ref)
         sig_params.append(f"body: {body_schema_ref}")
     elif body_is_raw:
-        sig_params.append("body: t.Dict[str, t.Any]")
+        sig_params.append("body: dict[str, t.Any]")
 
-    required_query: t.List[str] = []
-    optional_query: t.List[str] = []
+    required_query: list[str] = []
+    optional_query: list[str] = []
     for p in query_params:
         api_name = p["name"]
         py_name = to_python_name(api_name)
@@ -172,7 +197,7 @@ def _generate_method(
         else:
             default_val = default if default is not None else "None"
             if default is None:
-                ptype = f"t.Optional[{ptype}]"
+                ptype = f"{ptype} | None"
             optional_query.append(f"{py_name}: {ptype} = {default_val}")
 
     sig_params.extend(required_query)
@@ -183,15 +208,18 @@ def _generate_method(
         py_name = to_python_name(api_name)
         header_param_map[api_name] = py_name
         ptype = param_python_type(p.get("schema", {}))
-        sig_params.append(f"{py_name}: t.Optional[{ptype}] = None")
+        sig_params.append(f"{py_name}: {ptype} | None = None")
 
-    return_type_str = response_type if response_type else "None"
+    if response_type == "dict[str, t.Any]":  # noqa: SIM108
+        return_type_str = "t.Any"
+    else:
+        return_type_str = response_type if response_type else "None"
 
-    lines: t.List[str] = []
+    lines: list[str] = []
     sig = ", ".join(sig_params) + ","
     lines.append(f"    async def {method_name}({sig}) -> {return_type_str}:")
 
-    doc_params: t.List[t.Tuple[str, str]] = []
+    doc_params: list[tuple[str, str]] = []
     for p in path_params:
         py_name = path_param_map[p["name"]]
         doc_params.append((py_name, p.get("description", "")))
@@ -217,31 +245,8 @@ def _generate_method(
     else:
         lines.append(f'        path = "{path}"')
 
-    if query_params:
-        if len(query_params) == 1:
-            api_name = query_params[0]["name"]
-            py_name = query_param_map[api_name]
-            lines.append(f'        params = {{"{api_name}": {py_name}}}')
-        else:
-            lines.append("        params = {")
-            for p in query_params:
-                api_name = p["name"]
-                py_name = query_param_map[api_name]
-                lines.append(f'            "{api_name}": {py_name},')
-            lines.append("        }")
-
-    if header_params:
-        if len(header_params) == 1:
-            api_name = header_params[0]["name"]
-            py_name = header_param_map[api_name]
-            lines.append(f'        headers = {{"{api_name}": {py_name}}}')
-        else:
-            lines.append("        headers = {")
-            for p in header_params:
-                api_name = p["name"]
-                py_name = header_param_map[api_name]
-                lines.append(f'            "{api_name}": {py_name},')
-            lines.append("        }")
+    lines.extend(_build_dict_literal(query_params, query_param_map, "params"))
+    lines.extend(_build_dict_literal(header_params, header_param_map, "headers"))
 
     req_parts = [f'            method="{http_method.upper()}",']
     req_parts.append("            path=path,")
@@ -253,10 +258,13 @@ def _generate_method(
         req_parts.append("            body=body,")
     if header_params:
         req_parts.append("            headers=headers,")
-    if response_type and response_type != "t.Dict[str, t.Any]":
+    if response_type and response_type != "dict[str, t.Any]":
         req_parts.append(f"            response_model={response_type},")
 
-    lines.append("        return await self._request(")
+    if return_type_str == "None":
+        lines.append("        await self._request(")
+    else:
+        lines.append("        return await self._request(")
     lines.extend(req_parts)
     lines.append("        )")
 
@@ -274,13 +282,13 @@ def run() -> None:
 
     RESOURCES_DIR.mkdir(parents=True, exist_ok=True)
 
-    modules: t.List[t.Tuple[str, str]] = []
+    modules: list[tuple[str, str]] = []
 
     for tag in sorted(tag_endpoints):
         endpoints = tag_endpoints[tag]
         module = tag_to_module_name(tag)
         class_name = tag_to_class_name(tag)
-        all_model_imports: t.Set[str] = set()
+        all_model_imports: set[str] = set()
         methods = []
 
         for path, http_method, operation in endpoints:

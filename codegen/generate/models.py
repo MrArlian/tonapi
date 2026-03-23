@@ -1,6 +1,5 @@
 import keyword
 import re
-import typing as t
 from collections import defaultdict
 from pathlib import Path
 
@@ -39,22 +38,20 @@ def _is_type_alias_schema(schema: dict) -> bool:
     type_ = schema.get("type")
     if type_ == "array":
         return True
-    if type_ in ("string", "integer", "number", "boolean") and "enum" not in schema:
-        return True
-    return False
+    return type_ in ("string", "integer", "number", "boolean") and "enum" not in schema
 
 
 def _build_schema_to_module(
         spec: dict,
         schemas: dict,
-) -> t.Dict[str, str]:
+) -> dict[str, str]:
     """Map each schema name to a target module.
 
     :param spec: full OpenAPI spec.
     :param schemas: all component schemas.
     :return: mapping of schema name to module name.
     """
-    tag_schema_count: t.Dict[str, t.Dict[str, int]] = defaultdict(
+    tag_schema_count: dict[str, dict[str, int]] = defaultdict(
         lambda: defaultdict(int),
     )
 
@@ -70,7 +67,7 @@ def _build_schema_to_module(
                     if ref in schemas:
                         tag_schema_count[module][ref] += 1
 
-    schema_to_module: t.Dict[str, str] = {}
+    schema_to_module: dict[str, str] = {}
     for schema_name in schemas:
         best_module = None
         best_count = 0
@@ -88,7 +85,7 @@ def _build_schema_to_module(
         unassigned = set(schemas.keys()) - set(schema_to_module.keys())
         if not unassigned:
             break
-        ref_from: t.Dict[str, t.Dict[str, int]] = defaultdict(
+        ref_from: dict[str, dict[str, int]] = defaultdict(
             lambda: defaultdict(int),
         )
         for name in schema_to_module:
@@ -141,7 +138,7 @@ def _generate_field(
         prop: dict,
         required: bool,
         schemas: dict,
-        enum_names: t.Set[str],
+        enum_names: set[str],
 ) -> str:
     """Generate a single model field line.
 
@@ -158,9 +155,9 @@ def _generate_field(
 
     is_optional = not required or prop.get("nullable", False)
     if is_optional:
-        type_str = f"t.Optional[{type_str}]"
+        type_str = f"{type_str} | None"
 
-    parts: t.List[str] = []
+    parts: list[str] = []
     if alias_needed:
         parts.append(f'alias="{field_name}"')
     if is_optional:
@@ -172,23 +169,23 @@ def _generate_field(
     return f"{python_name}: {type_str}"
 
 
-def _collect_model_refs(schema: dict) -> t.Set[str]:
+def _collect_model_refs(schema: dict) -> set[str]:
     """Collect all ``$ref`` model names from a schema's properties.
 
     :param schema: component schema dict.
     :return: set of referenced model names.
     """
-    refs: t.Set[str] = set()
+    refs: set[str] = set()
     for prop in schema.get("properties", {}).values():
         refs |= resolve_type_for_ref_check(prop)
     return refs
 
 
 def _topological_sort(
-        models: t.Dict[str, dict],
-        schema_to_module: t.Dict[str, str],
+        models: dict[str, dict],
+        schema_to_module: dict[str, str],
         module: str,
-) -> t.List[str]:
+) -> list[str]:
     """Sort models within a module so dependencies come first.
 
     :param models: all model schemas.
@@ -200,9 +197,9 @@ def _topological_sort(
         n for n, m in schema_to_module.items()
         if m == module and n in models
     }
-    order: t.List[str] = []
-    visited: t.Set[str] = set()
-    in_progress: t.Set[str] = set()
+    order: list[str] = []
+    visited: set[str] = set()
+    in_progress: set[str] = set()
 
     def visit(name: str) -> None:
         if name in visited or name not in local:
@@ -225,9 +222,9 @@ def _topological_sort(
 def _build_module_context(
         module: str,
         schemas: dict,
-        schema_to_module: t.Dict[str, str],
-        enum_names: t.Set[str],
-) -> t.Optional[dict]:
+        schema_to_module: dict[str, str],
+        enum_names: set[str],
+) -> dict | None:
     """Build template context for a single model module.
 
     :param module: target module name.
@@ -236,8 +233,8 @@ def _build_module_context(
     :param enum_names: known enum schema names.
     :return: template context dict, or ``None`` if module is empty.
     """
-    type_alias_schemas: t.Dict[str, dict] = {}
-    model_schemas: t.Dict[str, dict] = {}
+    type_alias_schemas: dict[str, dict] = {}
+    model_schemas: dict[str, dict] = {}
     for n in schemas:
         if schema_to_module.get(n) != module or n in enum_names:
             continue
@@ -252,8 +249,8 @@ def _build_module_context(
     ordered = _topological_sort(model_schemas, schema_to_module, module)
     type_alias_names = sorted(type_alias_schemas.keys())
 
-    enum_imports: t.Set[str] = set()
-    type_checking_cross: t.Dict[str, t.Set[str]] = defaultdict(set)
+    enum_imports: set[str] = set()
+    type_checking_cross: dict[str, set[str]] = defaultdict(set)
 
     for name in ordered:
         for ref in _collect_model_refs(schemas[name]):
@@ -272,13 +269,13 @@ def _build_module_context(
 
     needs_pydantic = bool(model_schemas)
 
-    pydantic_imports: t.List[str] = []
+    pydantic_imports: list[str] = []
     if needs_pydantic:
         pydantic_imports = ["BaseModel", "Field"]
         if needs_config_dict:
             pydantic_imports.append("ConfigDict")
 
-    definitions: t.List[dict] = []
+    definitions: list[dict] = []
 
     for name in type_alias_names:
         type_str = resolve_type(schemas[name], schemas, enum_names)
@@ -296,8 +293,8 @@ def _build_module_context(
         required_set = set(schema.get("required", []))
         properties = schema.get("properties", {})
 
-        required_fields: t.List[str] = []
-        optional_fields: t.List[str] = []
+        required_fields: list[str] = []
+        optional_fields: list[str] = []
         for field_name, prop in properties.items():
             is_req = field_name in required_set and not prop.get("nullable", False)
             line = _generate_field(
@@ -344,7 +341,7 @@ def run() -> None:
 
     schema_to_module = _build_schema_to_module(spec, schemas)
 
-    module_counts: t.Dict[str, int] = defaultdict(int)
+    module_counts: dict[str, int] = defaultdict(int)
     for module in schema_to_module.values():
         module_counts[module] += 1
     for mod in sorted(module_counts):
@@ -353,7 +350,7 @@ def run() -> None:
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
     # _enums.py
-    enums_data: t.List[dict] = []
+    enums_data: list[dict] = []
     for name in sorted(schemas):
         if _is_enum_schema(schemas[name]):
             members = [
@@ -367,7 +364,7 @@ def run() -> None:
     print("Generated _enums.py")
 
     # Module files
-    modules_generated: t.Set[str] = set()
+    modules_generated: set[str] = set()
     template = env.get_template("model.py.j2")
 
     for module in sorted(set(schema_to_module.values())):
@@ -386,11 +383,11 @@ def run() -> None:
 
     # __init__.py
     type_alias_names = {n for n in schemas if _is_type_alias_schema(schemas[n])}
-    module_to_names: t.Dict[str, t.List[str]] = defaultdict(list)
+    module_to_names: dict[str, list[str]] = defaultdict(list)
     for name, module in sorted(schema_to_module.items()):
         module_to_names[module].append(name)
 
-    module_imports: t.List[t.Tuple[str, t.List[str]]] = []
+    module_imports: list[tuple[str, list[str]]] = []
     for module in sorted(module_to_names):
         names = [
             n for n in sorted(module_to_names[module])
@@ -399,7 +396,7 @@ def run() -> None:
         if names:
             module_imports.append((module, names))
 
-    rebuild_models: t.List[str] = []
+    rebuild_models: list[str] = []
     for module in sorted(module_to_names):
         names = [
             n for n in sorted(module_to_names[module])

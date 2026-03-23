@@ -16,11 +16,10 @@ class ResourcesMixin:
 
     def __init__(self, client: TonapiRestClient) -> None:
         self._client = client
-
     {% for module, class_name in modules %}
 
     @property
     def {{ module }}(self) -> {{ class_name }}:
+        """Access :class:`{{ class_name }}` resource group."""
         return {{ class_name }}(self._client)
-
 {% endfor %}

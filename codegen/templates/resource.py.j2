@@ -11,6 +11,7 @@ from pytonapi.rest.models import {{ model_imports | sort | join(', ') }}
 
 
 class {{ class_name }}(BaseResource):
+    """{{ class_name }} resource group."""
 {% for method in methods %}
 
 {{ method.code }}

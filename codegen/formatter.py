@@ -2,6 +2,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from codegen.utils import ROOT
+
 
 def run_ruff(target: Path) -> None:
     """Run ruff check (fix unused imports) and format on a target path.
@@ -16,6 +18,7 @@ def run_ruff(target: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        cwd=ROOT,
     )
     if result.returncode != 0:
         print(f"Ruff check failed:\n{result.stderr}")
@@ -25,6 +28,7 @@ def run_ruff(target: Path) -> None:
         [sys.executable, "-m", "ruff", "format", str(target), "--quiet"],
         capture_output=True,
         text=True,
+        cwd=ROOT,
     )
     if result.returncode != 0:
         print(f"Ruff format failed:\n{result.stderr}")
