@@ -4,12 +4,12 @@ from aiohttp import web
 
 from pytonapi.types import Network, Opcode
 from pytonapi.webhook import (
-    TonapiWebhookClient,
-    TonapiWebhookDispatcher,
     AccountTxEvent,
     MempoolMsgEvent,
     NewContractsEvent,
     OpcodeMsgEvent,
+    TonapiWebhookClient,
+    TonapiWebhookDispatcher,
 )
 
 # TONAPI key — get one at https://tonconsole.com/
@@ -82,7 +82,7 @@ async def handle_webhook(request: web.Request) -> web.Response:
         # Verify the Authorization header and dispatch the event to handlers
         authorization = request.headers.get("Authorization")
         await dispatcher.process(request.path, data, authorization=authorization)
-    except (Exception,) as e:
+    except Exception as e:
         print(f"Webhook error: {e}")
         return web.Response(status=401)
     return web.Response(status=200)

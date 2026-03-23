@@ -5,12 +5,12 @@ from fastapi import FastAPI, Request, Response
 
 from pytonapi.types import Network, Opcode
 from pytonapi.webhook import (
-    TonapiWebhookClient,
-    TonapiWebhookDispatcher,
     AccountTxEvent,
     MempoolMsgEvent,
     NewContractsEvent,
     OpcodeMsgEvent,
+    TonapiWebhookClient,
+    TonapiWebhookDispatcher,
 )
 
 # TONAPI key — get one at https://tonconsole.com/
@@ -83,7 +83,7 @@ async def handle_webhook(request: Request) -> Response:
         # Verify the Authorization header and dispatch the event to handlers
         authorization = request.headers.get("Authorization")
         await dispatcher.process(request.url.path, data, authorization=authorization)
-    except (Exception,) as e:
+    except Exception as e:
         print(f"Webhook error: {e}")
         return Response(status_code=401)
     return Response(status_code=200)

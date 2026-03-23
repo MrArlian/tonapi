@@ -2,7 +2,6 @@
 # pip install tonutils
 
 from pytoniq_core import Address
-
 from tonutils.clients import TonapiClient
 from tonutils.contracts import WalletV5R1
 from tonutils.types import NetworkGlobalID
