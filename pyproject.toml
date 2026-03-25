@@ -104,8 +104,6 @@ select = [
     "RUF",
 ]
 ignore = [
-    # line too long
-    "E501",
     # docstring in public module
     "D100",
     # docstring in public package
@@ -116,6 +114,8 @@ ignore = [
     "D107",
     # blank line before class docstring (conflicts D211)
     "D203",
+    # 1 blank line required between summary and description (multi-line summary)
+    "D205",
     # multi-line summary second line (conflicts D212)
     "D213",
     # first word capitalization (false positive for proper nouns like dApp)
@@ -129,6 +129,7 @@ ignore = [
 "__init__.py" = ["F401"]
 "pytonapi/rest/models/*" = ["D101"]
 "tests/*" = ["D101", "D102", "T20"]
+"tests/rest/fixtures.py" = ["E501"]
 "codegen/*" = ["T20"]
 "examples/*" = ["D", "T20", "RUF006", "RUF059"]
 
