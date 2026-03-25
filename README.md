@@ -1,4 +1,4 @@
-# 📦 PyTONAPI
+# 📦 TON API
 
 [![TON](https://img.shields.io/badge/TON-grey?logo=TON&logoColor=40AEF0)](https://ton.org)
 ![Python Versions](https://img.shields.io/badge/Python-3.10%20--%203.14-black?color=FFE873&labelColor=3776AB)
@@ -12,7 +12,7 @@
 ![Downloads](https://pepy.tech/badge/pytonapi/month)
 ![Downloads](https://pepy.tech/badge/pytonapi/week)
 
-### Python SDK for [TONAPI](https://tonapi.io)
+### Python SDK for [TON API](https://tonapi.io)
 
 Access TON blockchain data via REST API, real-time streaming, and webhooks.
 API key required — obtain at [tonconsole.com](https://tonconsole.com/), docs
