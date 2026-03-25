@@ -17,8 +17,7 @@ class TracesResource(BaseResource):
     ) -> Trace:
         """Get the trace by trace ID or hash of any transaction in trace.
 
-        :param trace_id: Trace ID or transaction hash in hex (without 0x) or base64url
-            format.
+        :param trace_id: Trace ID or transaction hash in hex (without 0x) or base64url format.
         :return: Trace
         """
         path = f"/v2/traces/{trace_id}"

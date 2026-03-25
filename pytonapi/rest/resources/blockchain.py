@@ -100,7 +100,9 @@ class BlockchainResource(BaseResource):
         self,
         masterchain_seqno: int,
     ) -> BlockchainBlocks:
-        """Get all blocks in all shards and workchains between target and previous masterchain block according to shards last blocks snapshot in masterchain.  We don't recommend to build your app around this method because it has problem with scalability and will work very slow in the future.
+        """Get all blocks in all shards and workchains between target and previous masterchain block according
+        to shards last blocks snapshot in masterchain.  We don't recommend to build your app around this method
+        because it has problem with scalability and will work very slow in the future.
 
         :param masterchain_seqno: Masterchain block seqno.
         :return: BlockchainBlocks
@@ -116,7 +118,9 @@ class BlockchainResource(BaseResource):
         self,
         masterchain_seqno: int,
     ) -> Transactions:
-        """Get all transactions in all shards and workchains between target and previous masterchain block according to shards last blocks snapshot in masterchain. We don't recommend to build your app around this method because it has problem with scalability and will work very slow in the future.
+        """Get all transactions in all shards and workchains between target and previous masterchain block
+        according to shards last blocks snapshot in masterchain. We don't recommend to build your app around
+        this method because it has problem with scalability and will work very slow in the future.
 
         :param masterchain_seqno: Masterchain block seqno.
         :return: Transactions

@@ -117,8 +117,7 @@ class JettonsResource(BaseResource):
     ) -> Event:
         """Get only jetton transfers in the event.
 
-        :param event_id: Event ID or transaction hash in hex (without 0x) or base64url
-            format.
+        :param event_id: Event ID or transaction hash in hex (without 0x) or base64url format.
         :param accept_language: Accept language.
         :return: Event
         """

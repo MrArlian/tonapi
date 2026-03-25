@@ -79,8 +79,8 @@ class StakingResource(BaseResource):
         """All pools available in network.
 
         :param available_for: Account ID.
-        :param include_unverified: Return also pools not from white list - just
-            compatible by interfaces (maybe dangerous!).
+        :param include_unverified: Return also pools not from white list - just compatible by interfaces (maybe
+            dangerous!).
         :param accept_language: Accept language.
         :return: dict[str, t.Any]
         """

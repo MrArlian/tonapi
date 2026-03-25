@@ -90,8 +90,7 @@ class AccountsResource(BaseResource):
         """Get all Jettons balances by owner address.
 
         :param account_id: Account ID.
-        :param currencies: Accept ton and all possible fiat currencies, separated by
-            commas.
+        :param currencies: Accept ton and all possible fiat currencies, separated by commas.
         :param supported_extensions: Comma separated list supported extensions.
         :param limit: Limit.
         :param offset: Offset.
@@ -122,8 +121,7 @@ class AccountsResource(BaseResource):
 
         :param account_id: Account ID.
         :param jetton_id: Jetton ID.
-        :param currencies: Accept ton and all possible fiat currencies, separated by
-            commas.
+        :param currencies: Accept ton and all possible fiat currencies, separated by commas.
         :param supported_extensions: Comma separated list supported extensions.
         :return: JettonBalance
         """
@@ -215,9 +213,8 @@ class AccountsResource(BaseResource):
         :param collection: Nft collection.
         :param limit: Limit.
         :param offset: Offset.
-        :param indirect_ownership: Selling nft items in ton implemented usually via
-            transfer items to special selling account. This option enables including
-            items which owned not directly.
+        :param indirect_ownership: Selling nft items in ton implemented usually via transfer items to special selling
+            account. This option enables including items which owned not directly.
         :return: NftItems
         """
         path = f"/v2/accounts/{account_id}/nfts"
@@ -247,12 +244,16 @@ class AccountsResource(BaseResource):
         sort_order: str = "desc",
         accept_language: str | None = None,
     ) -> AccountEvents:
-        """Get events for an account. Each event is built on top of a trace which is a series of transactions caused by one inbound message. TonAPI looks for known patterns inside the trace and splits the trace into actions, where a single action represents a meaningful high-level operation like a Jetton Transfer or an NFT Purchase. Actions are expected to be shown to users. It is advised not to build any logic on top of actions because actions can be changed at any time.
+        """Get events for an account. Each event is built on top of a trace which is a series of transactions
+        caused by one inbound message. TonAPI looks for known patterns inside the trace and splits the trace
+        into actions, where a single action represents a meaningful high-level operation like a Jetton Transfer
+        or an NFT Purchase. Actions are expected to be shown to users. It is advised not to build any logic on
+        top of actions because actions can be changed at any time.
 
         :param account_id: Account ID.
         :param initiator: Show only events that are initiated by this account.
-        :param subject_only: Filter actions where requested account is not real subject
-            (for example sender or receiver jettons).
+        :param subject_only: Filter actions where requested account is not real subject (for example sender or receiver
+            jettons).
         :param after_lt: Omit this parameter to get last events.
         :param before_lt: Omit this parameter to get last events.
         :param limit: Limit.
@@ -292,10 +293,9 @@ class AccountsResource(BaseResource):
         """Get event for an account by event_id.
 
         :param account_id: Account ID.
-        :param event_id: Event ID or transaction hash in hex (without 0x) or base64url
-            format.
-        :param subject_only: Filter actions where requested account is not real subject
-            (for example sender or receiver jettons).
+        :param event_id: Event ID or transaction hash in hex (without 0x) or base64url format.
+        :param subject_only: Filter actions where requested account is not real subject (for example sender or receiver
+            jettons).
         :param accept_language: Accept language.
         :return: AccountEvent
         """
