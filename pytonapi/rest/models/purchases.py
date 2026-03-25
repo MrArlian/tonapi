@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import typing as t
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 if t.TYPE_CHECKING:
-    from pytonapi.rest.models.accounts import AccountAddress, Metadata
+    from pytonapi.rest.models.accounts import AccountAddress
     from pytonapi.rest.models.nft import Price
+
+
+class Metadata(BaseModel):
+    encrypted_binary: str
+    decryption_key: str | None = Field(default=None)
 
 
 class Purchase(BaseModel):

@@ -47,7 +47,6 @@ from pytonapi.rest.models.accounts import (
     JettonSwapAction,
     JettonTransferAction,
     LiquidityDepositAction,
-    Metadata,
     Multisigs,
     NftItemTransferAction,
     NftPurchaseAction,
@@ -151,7 +150,7 @@ from pytonapi.rest.models.nft import (
     Price,
     Sale,
 )
-from pytonapi.rest.models.purchases import AccountPurchases, Purchase
+from pytonapi.rest.models.purchases import AccountPurchases, Metadata, Purchase
 from pytonapi.rest.models.rates import ChartPoints, MarketTonRates, TokenRates
 from pytonapi.rest.models.staking import AccountStaking, AccountStakingInfo, ApyHistory, PoolImplementation, PoolInfo
 from pytonapi.rest.models.storage import StorageProvider
@@ -204,7 +203,6 @@ _models_to_rebuild = [
     JettonTransferAction,
     JettonsBalances,
     LiquidityDepositAction,
-    Metadata,
     Multisigs,
     NftItemTransferAction,
     NftPurchaseAction,
@@ -308,6 +306,7 @@ _models_to_rebuild = [
     Price,
     Sale,
     AccountPurchases,
+    Metadata,
     Purchase,
     MarketTonRates,
     TokenRates,

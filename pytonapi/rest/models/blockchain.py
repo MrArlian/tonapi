@@ -67,11 +67,6 @@ class BlockValueFlow(BaseModel):
     burned: BlockCurrencyCollection | None = Field(default=None)
 
 
-class Method(BaseModel):
-    id: int
-    method: str
-
-
 class SourceFile(BaseModel):
     name: str
     content: str
@@ -82,6 +77,11 @@ class SourceFile(BaseModel):
 
 class Source(BaseModel):
     files: list[SourceFile]
+
+
+class Method(BaseModel):
+    id: int
+    method: str
 
 
 class BlockchainAccountInspect(BaseModel):
@@ -259,6 +259,11 @@ class GasLimitPrices(BaseModel):
     flat_gas_price: int | None = Field(default=None)
 
 
+class Oracle(BaseModel):
+    address: str
+    secp_pubkey: str
+
+
 class JettonBridgePrices(BaseModel):
     bridge_burn_fee: int
     bridge_mint_fee: int
@@ -266,11 +271,6 @@ class JettonBridgePrices(BaseModel):
     wallet_gas_consumption: int
     minter_min_tons_for_storage: int
     discover_gas_consumption: int
-
-
-class Oracle(BaseModel):
-    address: str
-    secp_pubkey: str
 
 
 class JettonBridgeParams(BaseModel):
