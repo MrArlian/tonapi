@@ -10,6 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 
 ROOT: Path = Path(__file__).resolve().parents[1]
 DEFAULT_SPEC_URL: str = "https://tonapi.io/v2/openapi.yml"
+SPEC_SNAPSHOT_PATH: Path = Path(__file__).resolve().parent / "openapi.yml"
 CONFIG_PATH: Path = Path(__file__).resolve().parent / "config.yml"
 TEMPLATES_DIR: Path = Path(__file__).resolve().parent / "templates"
 
@@ -79,6 +80,8 @@ def load_spec(source: str | None = None) -> dict:
     if source.startswith(("http://", "https://")):
         print(f"Fetching spec from {source} ...")
         raw = _fetch_url(source)
+        SPEC_SNAPSHOT_PATH.write_bytes(raw)
+        print(f"Saved spec snapshot to {SPEC_SNAPSHOT_PATH.name}")
         _spec_cache = json.loads(raw) if source.endswith(".json") else yaml.safe_load(raw)
     else:
         path = Path(source)

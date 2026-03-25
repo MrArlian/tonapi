@@ -24,7 +24,7 @@ from codegen.utils import (
 )
 
 RESOURCES_DIR: Path = ROOT / "pytonapi" / "rest" / "resources"
-MAX_LINE_LENGTH: int = 88
+MAX_LINE_LENGTH: int = 120
 
 
 def _format_docstring(
@@ -67,7 +67,15 @@ def _format_docstring(
     lines: list[str] = []
 
     if description:
-        lines.append(f'{prefix}"""{description}')
+        first_line = f'{prefix}"""{description}'
+        if len(first_line) <= MAX_LINE_LENGTH:
+            lines.append(first_line)
+        else:
+            wrapped = textwrap.fill(
+                description, width=max_width,
+                initial_indent=prefix + '"""', subsequent_indent=prefix,
+            )
+            lines.append(wrapped)
     else:
         lines.append(f'{prefix}"""')
 
