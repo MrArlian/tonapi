@@ -24,7 +24,7 @@ class TonapiStreaming(BaseClient):
         *,
         base_url: str | None = None,
         headers: dict[str, str] | None = None,
-        reconnect_policy: ReconnectPolicy | None = None,
+        reconnect_policy: ReconnectPolicy = DEFAULT_RECONNECT_POLICY,
     ) -> None:
         """Initialize the streaming client.
 
@@ -32,7 +32,7 @@ class TonapiStreaming(BaseClient):
         :param network: Target network (``Network.MAINNET`` or ``Network.TESTNET``).
         :param base_url: Custom base URL (overrides ``network``).
         :param headers: Additional HTTP headers sent with every request.
-        :param reconnect_policy: Reconnection policy, or ``None`` for default.
+        :param reconnect_policy: Reconnection policy.
         """
         resolved_url = base_url or NETWORK_BASE_URLS[network]
         super().__init__(
@@ -41,7 +41,7 @@ class TonapiStreaming(BaseClient):
             headers=headers,
             timeout=0.0,
         )
-        self._reconnect_policy = reconnect_policy or DEFAULT_RECONNECT_POLICY
+        self._reconnect_policy = reconnect_policy
         self._sse: TonapiSSE | None = None
         self._ws: TonapiWebSocket | None = None
 
