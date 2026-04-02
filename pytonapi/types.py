@@ -7,6 +7,7 @@ __all__ = [
     "DEFAULT_RETRY_POLICY",
     "NETWORK_BASE_URLS",
     "WEBHOOK_BASE_URLS",
+    "ApiKey",
     "Network",
     "Opcode",
     "ReconnectPolicy",
@@ -97,6 +98,20 @@ class Opcode(str, Enum):
     MULTISIG_NEW_ORDER = "0xf718510f"
     MULTISIG_APPROVE = "0xa762230f"
     MULTISIG_EXECUTE_INTERNAL = "0xa32c59bf"
+
+
+@dataclass(slots=True, frozen=True)
+class ApiKey:
+    """API key with optional per-key rate limiting.
+
+    :param key: TONAPI key string.
+    :param rps_limit: Maximum requests per second for this key (``0`` disables).
+    :param rps_period: Rate-limiter window in seconds.
+    """
+
+    key: str
+    rps_limit: int = 0
+    rps_period: float = 1.0
 
 
 NETWORK_BASE_URLS: t.Final[dict[Network, str]] = {
