@@ -5,12 +5,14 @@ import json
 import typing as t
 
 import aiohttp
+from pydantic import ValidationError
 
 from pytonapi.exceptions import (
     TONAPIConnectionError,
     TONAPIError,
     TONAPIRetryLimitError,
     TONAPISessionNotCreatedError,
+    TONAPIValidationError,
     raise_for_status,
 )
 from pytonapi.types import (
@@ -85,6 +87,7 @@ class BaseClient:
         """
         if self._session and not self._session.closed and not self._is_external_session:
             await self._session.close()
+            await asyncio.sleep(0)
             self._session = None
 
     async def __aenter__(self) -> BaseClient:
@@ -179,11 +182,7 @@ class BaseClient:
         """
         url = f"{self._base_url}{path}"
         if params:
-            params = {
-                k: str(v).lower() if isinstance(v, bool) else v
-                for k, v in params.items()
-                if v is not None
-            }
+            params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items() if v is not None}
         if headers:
             headers = {k: str(v) for k, v in headers.items() if v is not None}
 
@@ -283,4 +282,10 @@ class BaseClient:
         data, _ = self._parse_body(text)
         if data is None:
             raise TONAPIError(f"Expected JSON response, got: {text}")
-        return response_model.model_validate(data)  # type: ignore[attr-defined]
+        try:
+            return response_model.model_validate(data)  # type: ignore[attr-defined]
+        except ValidationError as exc:
+            raise TONAPIValidationError(
+                model=response_model.__name__,
+                detail=str(exc),
+            ) from exc
