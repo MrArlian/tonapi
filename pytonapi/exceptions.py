@@ -5,11 +5,14 @@ __all__ = [
     "TONAPI_STATUS_TO_EXCEPTION",
     "TONAPIBadRequestError",
     "TONAPIClientError",
+    "TONAPIConflictError",
     "TONAPIConnectionError",
     "TONAPIConnectionLostError",
     "TONAPIError",
     "TONAPIForbiddenError",
+    "TONAPIGatewayTimeoutError",
     "TONAPIInternalServerError",
+    "TONAPIMethodNotAllowedError",
     "TONAPINotFoundError",
     "TONAPINotImplementedError",
     "TONAPIRetryLimitError",
@@ -19,6 +22,8 @@ __all__ = [
     "TONAPIStreamingError",
     "TONAPITooManyRequestsError",
     "TONAPIUnauthorizedError",
+    "TONAPIUnprocessableError",
+    "TONAPIValidationError",
     "raise_for_status",
 ]
 
@@ -81,6 +86,18 @@ class TONAPINotFoundError(TONAPIClientError):
     """HTTP 404 Not Found."""
 
 
+class TONAPIMethodNotAllowedError(TONAPIClientError):
+    """HTTP 405 Method Not Allowed."""
+
+
+class TONAPIConflictError(TONAPIClientError):
+    """HTTP 409 Conflict."""
+
+
+class TONAPIUnprocessableError(TONAPIClientError):
+    """HTTP 422 Unprocessable Entity."""
+
+
 class TONAPITooManyRequestsError(TONAPIClientError):
     """HTTP 429 Too Many Requests."""
 
@@ -93,6 +110,21 @@ class TONAPIInternalServerError(TONAPIServerError):
 
 class TONAPINotImplementedError(TONAPIServerError):
     """HTTP 501 Not Implemented."""
+
+
+class TONAPIGatewayTimeoutError(TONAPIServerError):
+    """HTTP 504 Gateway Timeout."""
+
+
+class TONAPIValidationError(TONAPIError):
+    """Response did not match the expected Pydantic model."""
+
+    def __init__(self, *, model: str, detail: str) -> None:
+        self.model_name = model
+        self.detail = detail
+        super().__init__(
+            f"Validation error for {model}: {detail}",
+        )
 
 
 class TONAPIStreamingError(TONAPIError):
@@ -158,9 +190,13 @@ TONAPI_STATUS_TO_EXCEPTION: t.Final[dict[int, type[TONAPIStatusError]]] = {
     401: TONAPIUnauthorizedError,
     403: TONAPIForbiddenError,
     404: TONAPINotFoundError,
+    405: TONAPIMethodNotAllowedError,
+    409: TONAPIConflictError,
+    422: TONAPIUnprocessableError,
     429: TONAPITooManyRequestsError,
     500: TONAPIInternalServerError,
     501: TONAPINotImplementedError,
+    504: TONAPIGatewayTimeoutError,
 }
 
 
