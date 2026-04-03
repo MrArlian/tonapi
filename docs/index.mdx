@@ -1,0 +1,76 @@
+---
+title: Overview
+description: Python SDK for the TON API — query blockchain data, track real-time events, and receive webhook notifications.
+---
+
+<CardGroup cols={2}>
+  <Card title="REST API" icon="bolt" href="/rest/overview">
+    Query accounts, Jettons, NFTs, transactions, and more.
+  </Card>
+  <Card title="Streaming" icon="satellite-dish" href="/streaming/overview">
+    Real-time blockchain events over SSE and WebSocket.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/webhooks/overview">
+    Push notifications for account transactions and mempool messages.
+  </Card>
+  <Card title="Claude Code Plugin" icon="wand-magic-sparkles" href="https://github.com/nessshon/tonapi/tree/main/skills/tonapi">
+    Install the AI plugin to query TON blockchain via Claude Code.
+  </Card>
+</CardGroup>
+
+## Quick start
+
+```python
+import asyncio
+
+from pytonapi.rest import TonapiRestClient
+from pytonapi.types import Network
+from pytonapi.utils import to_amount
+
+
+async def main() -> None:
+    async with TonapiRestClient("YOUR_API_KEY", Network.MAINNET) as tonapi:
+        account = await tonapi.accounts.get_account(
+            account_id="EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2",
+        )
+        print(f"Balance: {to_amount(account.balance)} TON")  # balance is in nanotons
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Installation
+
+```bash
+pip install pytonapi
+```
+
+Requires Python 3.10+. Dependencies: `aiohttp` 3.9+, `pydantic` 2.4+.
+
+**Claude Code Plugin**
+
+Install the [AI plugin](https://github.com/nessshon/tonapi/tree/main/skills/tonapi) to query TON blockchain through natural language:
+
+```
+/plugin marketplace add nessshon/claude-plugins
+/plugin install tonapi@nessshon-plugins
+```
+
+## Networks
+
+| Network | Enum value         | Base URL                      |
+| ------- | ------------------ | ----------------------------- |
+| Mainnet | `Network.MAINNET`  | `https://tonapi.io`           |
+| Testnet | `Network.TESTNET`  | `https://testnet.tonapi.io`   |
+| Tetra   | `Network.TETRA`    | `https://tetra.tonapi.io`     |
+
+## API Key
+
+An API key is **optional for REST** — requests without a key are throttled to **~0.24 RPS** (1 per 4 seconds). It is **required for streaming** and **webhooks**. A key unlocks higher rate limits for production use. Get one at [tonconsole.com](https://tonconsole.com/). See [pricing and plans](https://tonconsole.com/tonapi/pricing) for rate limits.
+
+<Note>
+  Multiple keys on the same plan share a combined RPS limit — for example, if your plan allows 10 RPS and you create two keys, they share 10 RPS total, not 10 each. The SDK supports [key rotation](/guide#key-rotation) with per-key rate limits for REST.
+</Note>
+
+For developer support join [@tonapitech](https://t.me/tonapitech) Telegram chat.

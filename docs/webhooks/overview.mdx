@@ -1,0 +1,87 @@
+---
+title: Overview
+description: push notifications for TON blockchain events via account transactions, mempool messages, opcode subscriptions, and new contract deployments
+---
+
+Webhooks deliver real-time POST notifications to your server when blockchain events occur.
+The SDK provides a low-level client for webhook CRUD and a high-level dispatcher with
+decorator-based event handling.
+
+## Architecture
+
+| Component                 | Description                                                              |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `TonapiWebhookClient`    | HTTP client for webhook CRUD — create, list, delete, subscribe/unsubscribe. |
+| `TonapiWebhookDispatcher`| Decorator-based event dispatcher — register handlers, auto-setup, process incoming events. |
+
+## Event Types
+
+| Type           | Enum             | Decorator                    | Description                    |
+| -------------- | ---------------- | ---------------------------- | ------------------------------ |
+| Account TX     | `ACCOUNT_TX`     | `@dispatcher.account_tx()`   | Account transactions.          |
+| Mempool        | `MEMPOOL_MSG`    | `@dispatcher.mempool_msg()`  | Pending mempool messages.      |
+| Opcode         | `OPCODE_MSG`     | `@dispatcher.opcode_msg()`   | Messages filtered by opcode.   |
+| New Contracts  | `NEW_CONTRACTS`  | `@dispatcher.new_contracts()`| New contract deployments.      |
+
+## Base URLs
+
+| Network | URL                              |
+| ------- | -------------------------------- |
+| Mainnet | `https://rt.tonapi.io`           |
+| Testnet | `https://rt-testnet.tonapi.io`   |
+
+## Quick Example
+
+FastAPI integration with automatic webhook setup and event dispatch:
+
+```python
+from fastapi import FastAPI, Request
+from pytonapi.webhook import TonapiWebhookClient, TonapiWebhookDispatcher, AccountTxEvent
+from pytonapi.types import Network
+
+app = FastAPI()
+
+client = TonapiWebhookClient("YOUR_API_KEY", Network.MAINNET)
+dispatcher = TonapiWebhookDispatcher(
+    url="https://example.com",
+    client=client,
+    accounts=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"],
+)
+
+
+@dispatcher.account_tx()
+async def on_tx(event: AccountTxEvent) -> None:
+    print(f"TX: {event.tx_hash}")
+
+
+@app.on_event("startup")
+async def startup() -> None:
+    await dispatcher.setup()
+
+
+@app.on_event("shutdown")
+async def shutdown() -> None:
+    await dispatcher.teardown(cleanup=True)
+
+
+@app.post("/account-tx")
+async def webhook_handler(request: Request) -> dict:
+    await dispatcher.process(
+        path="/account-tx",
+        data=await request.json(),
+        authorization=request.headers.get("Authorization"),
+    )
+    return {"ok": True}
+```
+
+See [Dispatcher](/webhooks/dispatcher) for multi-event setup, dependency injection, and advanced patterns.
+
+<Note>
+  TON API sends an `Authorization: Bearer {token}` header with every webhook request. The dispatcher verifies it automatically in `process()` — if you handle webhooks manually, verify the token yourself. Webhooks are available for Mainnet and Testnet only (no Tetra).
+</Note>
+
+| Page                                   | Content                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------- |
+| [Client](/webhooks/client)             | TonapiWebhookClient, TonapiWebhook, WebhookInfo, AccountSubscription.    |
+| [Dispatcher](/webhooks/dispatcher)     | Decorator registration, setup/teardown, process, dependency injection.    |
+| [Events](/webhooks/events)             | Event types and payload models.                                           |

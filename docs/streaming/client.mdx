@@ -1,0 +1,155 @@
+---
+title: Client
+description: constructor parameters, session lifecycle, and subscription methods
+---
+
+## Constructor
+
+`TonapiStreaming` wraps both transports behind a single session.
+
+| Parameter          | Default  | Description                                          |
+| ------------------ | -------- | ---------------------------------------------------- |
+| `api_key`          | Required | API key from [tonconsole.com](https://tonconsole.com/). |
+| `network`          | Required | Mainnet, Testnet, or Tetra.                          |
+| `base_url`         | Optional | Override the default URL.                            |
+| `headers`          | Optional | Extra HTTP headers sent with every request.          |
+| `reconnect_policy` | Optional | See [Connection](/streaming/connection).             |
+
+## Session lifecycle
+
+<Tabs>
+  <Tab title="Context manager (recommended)">
+    ```python
+    async with TonapiStreaming("YOUR_API_KEY", Network.MAINNET) as streaming:
+        async for event in streaming.sse.subscribe_transactions():
+            print(event.tx_hash)
+    ```
+  </Tab>
+  <Tab title="Manual">
+    ```python
+    streaming = TonapiStreaming("YOUR_API_KEY", Network.MAINNET)
+    await streaming.create_session()
+    try:
+        async for event in streaming.sse.subscribe_transactions():
+            print(event.tx_hash)
+    finally:
+        await streaming.close_session()
+    ```
+  </Tab>
+</Tabs>
+
+## Transports
+
+Access transports via properties on a running `TonapiStreaming` instance:
+
+- `streaming.sse` — returns `TonapiSSE`
+- `streaming.ws` — returns `TonapiWebSocket`
+
+Both are lazy-initialized on first access, require an active session, and share the session with the parent client. Accessing a transport before `create_session()` raises `TONAPISessionNotCreatedError`.
+
+## Subscriptions
+
+All four subscription methods are available on both transports with identical signatures.
+
+<Tabs>
+  <Tab title="SSE">
+    ```python
+    async for event in streaming.sse.subscribe_transactions(accounts=["EQ..."]):
+        ...
+    ```
+  </Tab>
+  <Tab title="WebSocket">
+    ```python
+    async for event in streaming.ws.subscribe_transactions(accounts=["EQ..."]):
+        ...
+    ```
+  </Tab>
+</Tabs>
+
+### Common parameters
+
+Every subscription method accepts:
+
+| Parameter | Default  | Description                                          |
+| --------- | -------- | ---------------------------------------------------- |
+| `stop`    | Optional | Set the event to stop the subscription gracefully.   |
+
+### subscribe_transactions
+
+Returns `AsyncIterator[TransactionEvent]`.
+
+| Parameter    | Default  | Description                                                  |
+| ------------ | -------- | ------------------------------------------------------------ |
+| `accounts`   | Optional | Account addresses to monitor. Omit to subscribe to all accounts. |
+| `operations` | Optional | Opcode filters — hex strings like `0x0f8a7ea5` or `Opcode` enum values. |
+
+### subscribe_blocks
+
+Returns `AsyncIterator[BlockEvent]`.
+
+| Parameter   | Default  | Description                                              |
+| ----------- | -------- | -------------------------------------------------------- |
+| `workchain` | Optional | Filter by workchain. Omit to subscribe to all blocks.    |
+
+### subscribe_traces
+
+Returns `AsyncIterator[TraceEvent]`.
+
+| Parameter  | Default  | Description                                                       |
+| ---------- | -------- | ----------------------------------------------------------------- |
+| `accounts` | Optional | Account addresses to monitor. Omit to subscribe to all accounts.  |
+
+### subscribe_mempool
+
+Returns `AsyncIterator[MempoolEvent]`.
+
+| Parameter  | Default  | Description                                                       |
+| ---------- | -------- | ----------------------------------------------------------------- |
+| `accounts` | Optional | Account addresses to filter. Omit to subscribe to all messages.   |
+
+## Stopping a subscription
+
+Pass an `asyncio.Event` to any subscribe method and set it when you want to stop:
+
+```python
+import asyncio
+
+from pytonapi.streaming import TonapiStreaming
+from pytonapi.types import Network
+
+stop = asyncio.Event()
+
+
+async def stop_after(seconds: float) -> None:
+    await asyncio.sleep(seconds)
+    stop.set()
+
+
+async def main() -> None:
+    async with TonapiStreaming("YOUR_API_KEY", Network.MAINNET) as streaming:
+        asyncio.create_task(stop_after(30))
+
+        async for event in streaming.sse.subscribe_transactions(
+            accounts=["EQ..."],
+            stop=stop,
+        ):
+            print(event)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Opcode filtering
+
+Use the `Opcode` enum or raw hex strings like `0x0f8a7ea5` to filter transactions by operation code:
+
+```python
+from pytonapi.types import Opcode
+
+async for event in streaming.sse.subscribe_transactions(
+    accounts=["EQ..."],
+    operations=[Opcode.JETTON_TRANSFER, Opcode.JETTON_NOTIFY],
+):
+    print(f"Jetton activity: {event.tx_hash}")
+```

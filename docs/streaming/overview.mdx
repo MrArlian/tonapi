@@ -1,0 +1,100 @@
+---
+title: Overview
+description: real-time blockchain events over SSE and WebSocket with automatic reconnection
+---
+
+| Transport        | Description                                                       |
+| ---------------- | ----------------------------------------------------------------- |
+| `TonapiSSE`      | One-way stream. HTTP GET request, server pushes SSE events.       |
+| `TonapiWebSocket`| Bidirectional. JSON-RPC 2.0 protocol with automatic reconnection. |
+
+## Endpoints
+
+<Tabs>
+  <Tab title="SSE">
+    | Network | URL                                       |
+    | ------- | ----------------------------------------- |
+    | Mainnet | `https://tonapi.io/v2/sse/...`            |
+    | Testnet | `https://testnet.tonapi.io/v2/sse/...`    |
+  </Tab>
+  <Tab title="WebSocket">
+    | Network | URL                                       |
+    | ------- | ----------------------------------------- |
+    | Mainnet | `wss://tonapi.io/v2/websocket`            |
+    | Testnet | `wss://testnet.tonapi.io/v2/websocket`    |
+  </Tab>
+</Tabs>
+
+## SDK Usage
+
+<Tabs>
+  <Tab title="SSE">
+    ```python
+    import asyncio
+
+    from pytonapi.streaming import TonapiStreaming
+    from pytonapi.types import Network
+    from pytonapi.exceptions import TONAPIConnectionLostError
+
+
+    async def main() -> None:
+        async with TonapiStreaming("YOUR_API_KEY", Network.MAINNET) as streaming:
+            try:
+                async for event in streaming.sse.subscribe_transactions(
+                    accounts=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"],
+                ):
+                    print(event.tx_hash)
+            except TONAPIConnectionLostError as e:
+                print(f"Connection lost after {e.attempts} reconnect attempts")
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+  </Tab>
+  <Tab title="WebSocket">
+    ```python
+    import asyncio
+
+    from pytonapi.streaming import TonapiStreaming
+    from pytonapi.types import Network
+    from pytonapi.exceptions import TONAPIConnectionLostError
+
+
+    async def main() -> None:
+        async with TonapiStreaming("YOUR_API_KEY", Network.MAINNET) as streaming:
+            try:
+                async for event in streaming.ws.subscribe_transactions(
+                    accounts=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"],
+                ):
+                    print(event.tx_hash)
+            except TONAPIConnectionLostError as e:
+                print(f"Connection lost after {e.attempts} reconnect attempts")
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+  </Tab>
+</Tabs>
+
+| Page                                | Content                                      |
+| ----------------------------------- | -------------------------------------------- |
+| [Client](/streaming/client)         | Constructor, lifecycle, subscriptions.        |
+| [Events](/streaming/events)         | Event models and field reference.             |
+| [Connection](/streaming/connection) | Reconnect policy, backoff, error handling.    |
+
+<Note>
+  An API key is **required** for streaming — unauthenticated connections are rejected. Get a key at [tonconsole.com](https://tonconsole.com/). The number of concurrent streaming connections depends on your plan.
+</Note>
+
+## Errors
+
+Streaming-specific exceptions:
+
+| Exception                    | When                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| `TONAPIStreamingError`       | Transport-level error (malformed SSE data, WebSocket subscribe failure). |
+| `TONAPIConnectionLostError`  | Reconnect limit exhausted. Exposes `.attempts` count.                    |
+
+Transient errors (5xx, 429, heartbeat timeout) trigger automatic reconnection — see [Connection](/streaming/connection) for details. All other client errors (400, 401, 403, 404) are fatal and raise immediately. See [Guide](/guide#errors) for the full exception hierarchy.

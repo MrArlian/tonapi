@@ -1,0 +1,232 @@
+---
+title: Overview
+description: REST API client for TONAPI — accounts, blockchain, jettons, NFTs, and more.
+---
+
+## Endpoints
+
+| Network | URL                             |
+| ------- | ------------------------------- |
+| Mainnet | `https://tonapi.io`             |
+| Testnet | `https://testnet.tonapi.io`     |
+| Tetra   | `https://tetra.tonapi.io`       |
+
+## Methods
+
+### Accounts — `tonapi.accounts`
+
+| API                                                              | Method                                                                                              |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| POST /v2/accounts/_bulk                                          | [`get_accounts`](/rest/get_accounts_post)                                                            |
+| GET /v2/accounts/{account_id}                                    | [`get_account`](/rest/get_account_get)                                                               |
+| GET /v2/accounts/{account_id}/dns/backresolve                    | [`account_dns_back_resolve`](/rest/account_dns_back_resolve_get)                                     |
+| GET /v2/accounts/{account_id}/jettons                            | [`get_account_jettons_balances`](/rest/get_account_jettons_balances_get)                              |
+| GET /v2/accounts/{account_id}/jettons/{jetton_id}                | [`get_account_jetton_balance`](/rest/get_account_jetton_balance_get)                                  |
+| GET /v2/accounts/{account_id}/jettons/history                    | [`get_account_jettons_history`](/rest/get_account_jettons_history_get)                                |
+| GET /v2/accounts/{account_id}/jettons/{jetton_id}/history        | [`get_account_jetton_history_by_id`](/rest/get_account_jetton_history_by_id_get)                      |
+| GET /v2/accounts/{account_id}/nfts                               | [`get_account_nft_items`](/rest/get_account_nft_items_get)                                            |
+| GET /v2/accounts/{account_id}/events                             | [`get_account_events`](/rest/get_account_events_get)                                                  |
+| GET /v2/accounts/{account_id}/events/{event_id}                  | [`get_account_event`](/rest/get_account_event_get)                                                    |
+| GET /v2/accounts/{account_id}/traces                             | [`get_account_traces`](/rest/get_account_traces_get)                                                  |
+| GET /v2/accounts/{account_id}/subscriptions                      | [`get_account_subscriptions`](/rest/get_account_subscriptions_get)                                    |
+| POST /v2/accounts/{account_id}/reindex                           | [`reindex_account`](/rest/reindex_account_post)                                                       |
+| GET /v2/accounts/search                                          | [`search_accounts`](/rest/search_accounts_get)                                                        |
+| GET /v2/accounts/{account_id}/dns/expiring                       | [`get_account_dns_expiring`](/rest/get_account_dns_expiring_get)                                      |
+| GET /v2/accounts/{account_id}/publickey                          | [`get_account_public_key`](/rest/get_account_public_key_get)                                          |
+| GET /v2/accounts/{account_id}/multisigs                          | [`get_account_multisigs`](/rest/get_account_multisigs_get)                                            |
+| GET /v2/accounts/{account_id}/diff                               | [`get_account_diff`](/rest/get_account_diff_get)                                                      |
+| GET /v2/accounts/{account_id}/extra-currency/{id}/history        | [`get_account_extra_currency_history_by_id`](/rest/get_account_extra_currency_history_by_id_get)      |
+| GET /v2/jettons/{jetton_id}/accounts/{account_id}/history        | [`get_jetton_account_history_by_id`](/rest/get_jetton_account_history_by_id_get)                      |
+| POST /v2/accounts/{account_id}/events/emulate                    | [`emulate_message_to_account_event`](/rest/emulate_message_to_account_event_post)                     |
+
+### Blockchain — `tonapi.blockchain`
+
+| API                                                              | Method                                                                                              |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| GET /v2/blockchain/reduced/blocks                                | [`get_reduced_blockchain_blocks`](/rest/get_reduced_blockchain_blocks_get)                            |
+| GET /v2/blockchain/blocks/{block_id}                             | [`get_block`](/rest/get_blockchain_block_get)                                                         |
+| GET /v2/blockchain/blocks/{block_id}/boc                         | [`download_blockchain_block_boc`](/rest/download_blockchain_block_boc_get)                            |
+| GET /v2/blockchain/masterchain/{seqno}/shards                    | [`get_masterchain_shards`](/rest/get_blockchain_masterchain_shards_get)                               |
+| GET /v2/blockchain/masterchain/{seqno}/blocks                    | [`get_masterchain_blocks`](/rest/get_blockchain_masterchain_blocks_get)                               |
+| GET /v2/blockchain/masterchain/{seqno}/transactions              | [`get_masterchain_transactions`](/rest/get_blockchain_masterchain_transactions_get)                   |
+| GET /v2/blockchain/masterchain/{seqno}/config                    | [`get_config_from_block`](/rest/get_blockchain_config_from_block_get)                                 |
+| GET /v2/blockchain/masterchain/{seqno}/config/raw                | [`get_raw_blockchain_config_from_block`](/rest/get_raw_blockchain_config_from_block_get)              |
+| GET /v2/blockchain/blocks/{block_id}/transactions                | [`get_block_transactions`](/rest/get_blockchain_block_transactions_get)                               |
+| GET /v2/blockchain/transactions/{transaction_id}                 | [`get_transaction`](/rest/get_blockchain_transaction_get)                                             |
+| GET /v2/blockchain/messages/{msg_id}/transaction                 | [`get_transaction_by_message_hash`](/rest/get_blockchain_transaction_by_message_hash_get)             |
+| GET /v2/blockchain/validators                                    | [`get_validators`](/rest/get_blockchain_validators_get)                                               |
+| GET /v2/blockchain/masterchain-head                              | [`get_masterchain_head`](/rest/get_blockchain_masterchain_head_get)                                   |
+| GET /v2/blockchain/accounts/{account_id}                         | [`get_raw_account`](/rest/get_blockchain_raw_account_get)                                             |
+| GET /v2/blockchain/accounts/{account_id}/transactions            | [`get_account_transactions`](/rest/get_blockchain_account_transactions_get)                           |
+| GET /v2/blockchain/accounts/{account_id}/methods/{method_name}   | [`execute_get_method`](/rest/exec_get_method_for_blockchain_account_get)                              |
+| POST /v2/blockchain/accounts/{account_id}/methods/{method_name}  | [`execute_get_method_with_body`](/rest/exec_get_method_with_body_for_blockchain_account_post)         |
+| POST /v2/blockchain/message                                      | [`send_message`](/rest/send_blockchain_message_post)                                                  |
+| GET /v2/blockchain/config                                        | [`get_config`](/rest/get_blockchain_config_get)                                                       |
+| GET /v2/blockchain/config/raw                                    | [`get_raw_blockchain_config`](/rest/get_raw_blockchain_config_get)                                    |
+| GET /v2/blockchain/accounts/{account_id}/inspect                 | [`account_inspect`](/rest/blockchain_account_inspect_get)                                             |
+| GET /v2/blockchain/libraries/{hash}                              | [`get_library_by_hash`](/rest/get_library_by_hash_get)                                               |
+
+### Connect — `tonapi.connect`
+
+| API                              | Method                                                                     |
+| -------------------------------- | -------------------------------------------------------------------------- |
+| GET /v2/tonconnect/payload       | [`get_ton_connect_payload`](/rest/get_ton_connect_payload_get)               |
+| POST /v2/tonconnect/stateinit    | [`get_account_info_by_state_init`](/rest/get_account_info_by_state_init_post) |
+
+### DNS — `tonapi.dns`
+
+| API                               | Method                                                   |
+| --------------------------------- | -------------------------------------------------------- |
+| GET /v2/dns/{domain_name}         | [`get_info`](/rest/get_dns_info_get)                      |
+| GET /v2/dns/{domain_name}/resolve | [`resolve`](/rest/dns_resolve_get)                        |
+| GET /v2/dns/{domain_name}/bids    | [`get_domain_bids`](/rest/get_domain_bids_get)            |
+| GET /v2/dns/auctions              | [`get_all_auctions`](/rest/get_all_auctions_get)          |
+
+### Emulation — `tonapi.emulation`
+
+| API                                               | Method                                                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| POST /v2/message/decode                           | [`decode_message`](/rest/decode_message_post)                                          |
+| POST /v2/events/emulate                           | [`emulate_message_to_event`](/rest/emulate_message_to_event_post)                      |
+| POST /v2/traces/emulate                           | [`emulate_message_to_trace`](/rest/emulate_message_to_trace_post)                      |
+| POST /v2/wallet/emulate                           | [`emulate_message_to_wallet`](/rest/emulate_message_to_wallet_post)                    |
+| POST /v2/accounts/{account_id}/events/emulate     | [`emulate_message_to_account_event`](/rest/emulate_message_to_account_event_post)      |
+
+### Events — `tonapi.events`
+
+| API                       | Method                                                                |
+| ------------------------- | --------------------------------------------------------------------- |
+| GET /v2/events/{event_id} | [`get_event`](/rest/get_event_get)                                     |
+| POST /v2/events/emulate   | [`emulate_message_to_event`](/rest/emulate_message_to_event_post)      |
+
+### Extra Currency — `tonapi.extra_currency`
+
+| API                         | Method                                                          |
+| --------------------------- | --------------------------------------------------------------- |
+| GET /v2/extra-currency/{id} | [`get_info`](/rest/get_extra_currency_info_get)                   |
+
+### Gasless — `tonapi.gasless`
+
+| API                                  | Method                                                  |
+| ------------------------------------ | ------------------------------------------------------- |
+| GET /v2/gasless/config               | [`config`](/rest/gasless_config_get)                      |
+| POST /v2/gasless/estimate/{master_id} | [`estimate`](/rest/gasless_estimate_post)                |
+| POST /v2/gasless/send                | [`send`](/rest/gasless_send_post)                         |
+
+### Jettons — `tonapi.jettons`
+
+| API                                                        | Method                                                                          |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| GET /v2/jettons                                            | [`get_jettons`](/rest/get_jettons_get)                                           |
+| GET /v2/jettons/{account_id}                               | [`get_jetton_info`](/rest/get_jetton_info_get)                                   |
+| POST /v2/jettons/_bulk                                     | [`get_jetton_infos_by_addresses`](/rest/get_jetton_infos_by_addresses_post)       |
+| GET /v2/jettons/{account_id}/holders                       | [`get_jetton_holders`](/rest/get_jetton_holders_get)                              |
+| GET /v2/jettons/{jetton_id}/transfer/{account_id}/payload  | [`get_jetton_transfer_payload`](/rest/get_jetton_transfer_payload_get)            |
+| GET /v2/events/{event_id}/jettons                          | [`get_events`](/rest/get_jettons_events_get)                                      |
+
+### Lite Server — `tonapi.lite_server`
+
+| API                                                      | Method                                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| GET /v2/liteserver/get_masterchain_info                  | [`get_raw_masterchain_info`](/rest/get_raw_masterchain_info_get)                           |
+| GET /v2/liteserver/get_masterchain_info_ext              | [`get_raw_masterchain_info_ext`](/rest/get_raw_masterchain_info_ext_get)                   |
+| GET /v2/liteserver/get_time                              | [`get_raw_time`](/rest/get_raw_time_get)                                                   |
+| GET /v2/liteserver/get_block/{block_id}                  | [`get_raw_blockchain_block`](/rest/get_raw_blockchain_block_get)                           |
+| GET /v2/liteserver/get_state/{block_id}                  | [`get_raw_blockchain_block_state`](/rest/get_raw_blockchain_block_state_get)               |
+| GET /v2/liteserver/get_block_header/{block_id}           | [`get_raw_blockchain_block_header`](/rest/get_raw_blockchain_block_header_get)             |
+| POST /v2/liteserver/send_message                         | [`send_raw_message`](/rest/send_raw_message_post)                                         |
+| GET /v2/liteserver/get_account_state/{account_id}        | [`get_raw_account_state`](/rest/get_raw_account_state_get)                                 |
+| GET /v2/liteserver/get_shard_info/{block_id}             | [`get_raw_shard_info`](/rest/get_raw_shard_info_get)                                       |
+| GET /v2/liteserver/get_all_shards_info/{block_id}        | [`get_all_raw_shards_info`](/rest/get_all_raw_shards_info_get)                             |
+| GET /v2/liteserver/get_transactions/{account_id}         | [`get_raw_transactions`](/rest/get_raw_transactions_get)                                   |
+| GET /v2/liteserver/list_block_transactions/{block_id}    | [`get_raw_list_block_transactions`](/rest/get_raw_list_block_transactions_get)             |
+| GET /v2/liteserver/get_block_proof                       | [`get_raw_block_proof`](/rest/get_raw_block_proof_get)                                     |
+| GET /v2/liteserver/get_config_all/{block_id}             | [`get_raw_config`](/rest/get_raw_config_get)                                               |
+| GET /v2/liteserver/get_shard_block_proof/{block_id}      | [`get_raw_shard_block_proof`](/rest/get_raw_shard_block_proof_get)                         |
+| GET /v2/liteserver/get_out_msg_queue_sizes               | [`get_out_msg_queue_sizes`](/rest/get_out_msg_queue_sizes_get)                             |
+
+### Multisig — `tonapi.multisig`
+
+| API                                  | Method                                                         |
+| ------------------------------------ | -------------------------------------------------------------- |
+| GET /v2/multisig/{account_id}        | [`get_account`](/rest/get_multisig_account_get)                 |
+| GET /v2/multisig/order/{account_id}  | [`get_order`](/rest/get_multisig_order_get)                     |
+
+### NFT — `tonapi.nft`
+
+| API                                            | Method                                                                                    |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| GET /v2/accounts/{account_id}/nfts/history     | [`get_account_nft_history`](/rest/get_account_nft_history_get)                              |
+| GET /v2/nfts/collections                       | [`get_collections`](/rest/get_nft_collections_get)                                          |
+| GET /v2/nfts/collections/{account_id}          | [`get_collection`](/rest/get_nft_collection_get)                                            |
+| POST /v2/nfts/collections/_bulk                | [`get_collection_items_by_addresses`](/rest/get_nft_collection_items_by_addresses_post)      |
+| GET /v2/nfts/collections/{account_id}/items    | [`get_items_from_collection`](/rest/get_items_from_collection_get)                           |
+| POST /v2/nfts/_bulk                            | [`get_items_by_addresses`](/rest/get_nft_items_by_addresses_post)                            |
+| GET /v2/nfts/{account_id}                      | [`get_item_by_address`](/rest/get_nft_item_by_address_get)                                   |
+| GET /v2/nfts/{account_id}/history              | [`get_history_by_id`](/rest/get_nft_history_by_id_get)                                       |
+
+### Purchases — `tonapi.purchases`
+
+| API                                         | Method                                                         |
+| ------------------------------------------- | -------------------------------------------------------------- |
+| GET /v2/purchases/{account_id}/history      | [`get_purchase_history`](/rest/get_purchase_history_get)         |
+
+### Rates — `tonapi.rates`
+
+| API                    | Method                                                   |
+| ---------------------- | -------------------------------------------------------- |
+| GET /v2/rates          | [`get_rates`](/rest/get_rates_get)                        |
+| GET /v2/rates/chart    | [`get_chart_rates`](/rest/get_chart_rates_get)            |
+| GET /v2/rates/markets  | [`get_markets_rates`](/rest/get_markets_rates_get)        |
+
+### Staking — `tonapi.staking`
+
+| API                                              | Method                                                                           |
+| ------------------------------------------------ | -------------------------------------------------------------------------------- |
+| GET /v2/staking/nominator/{account_id}/pools     | [`get_account_nominators_pools`](/rest/get_account_nominators_pools_get)           |
+| GET /v2/staking/pool/{account_id}                | [`get_pool_info`](/rest/get_staking_pool_info_get)                                |
+| GET /v2/staking/pool/{account_id}/history        | [`get_pool_history`](/rest/get_staking_pool_history_get)                           |
+| GET /v2/staking/pools                            | [`get_pools`](/rest/get_staking_pools_get)                                         |
+
+### Storage — `tonapi.storage`
+
+| API                        | Method                                                         |
+| -------------------------- | -------------------------------------------------------------- |
+| GET /v2/storage/providers  | [`get_providers`](/rest/get_storage_providers_get)               |
+
+### Traces — `tonapi.traces`
+
+| API                       | Method                                                                  |
+| ------------------------- | ----------------------------------------------------------------------- |
+| GET /v2/traces/{trace_id} | [`get_trace`](/rest/get_trace_get)                                       |
+| POST /v2/traces/emulate   | [`emulate_message_to_trace`](/rest/emulate_message_to_trace_post)        |
+
+### Utilities — `tonapi.utilities`
+
+| API                                      | Method                                                   |
+| ---------------------------------------- | -------------------------------------------------------- |
+| GET /v2/openapi.json                     | [`get_openapi_json`](/rest/get_openapi_json_get)          |
+| GET /v2/openapi.yml                      | [`get_openapi_yml`](/rest/get_openapi_yml_get)            |
+| GET /v2/status                           | [`status`](/rest/status_get)                              |
+| GET /v2/address/{account_id}/parse       | [`address_parse`](/rest/address_parse_get)                |
+
+### Wallet — `tonapi.wallet`
+
+| API                                      | Method                                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------------------------- |
+| POST /v2/wallet/auth/proof              | [`ton_connect_proof`](/rest/ton_connect_proof_post)                                   |
+| GET /v2/wallet/{account_id}/seqno       | [`get_account_seqno`](/rest/get_account_seqno_get)                                    |
+| GET /v2/wallet/{account_id}             | [`get_info`](/rest/get_wallet_info_get)                                                |
+| GET /v2/pubkeys/{public_key}/wallets    | [`get_wallets_by_public_key`](/rest/get_wallets_by_public_key_get)                    |
+| POST /v2/pubkeys/wallets/_bulk          | [`get_wallets_by_public_key_bulk`](/rest/get_wallets_by_public_key_bulk_post)          |
+| POST /v2/wallet/emulate                 | [`emulate_message_to_wallet`](/rest/emulate_message_to_wallet_post)                    |
+
+Retries for `429` and server errors are enabled by default with exponential backoff. See [Guide](/guide#retries) for retry policy, rate limiting, and session management.
+
+<Note>
+  TON API returns Pydantic-validated models for every endpoint. If the response shape changes unexpectedly, the SDK raises `TONAPIValidationError` with field-level details.
+</Note>
+
+## Errors
+
+TON API may return status codes 400, 401, 403, 404, 405, 409, 422, 429, 500, 501, and 504. See [Guide](/guide#errors) for the full exception hierarchy, descriptions, and handling examples.

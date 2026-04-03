@@ -1,0 +1,322 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "palm",
+  "name": "TON API",
+  "description": "Python SDK for TON API — REST API, Streaming, and Webhooks for TON blockchain.",
+  "logo": {
+    "light": "/assets/logo/light.svg",
+    "dark": "/assets/logo/dark.svg",
+    "href": "/"
+  },
+  "favicon": "/assets/favicon.svg",
+  "colors": {
+    "primary": "#0098EA",
+    "light": "#F7F9FB",
+    "dark": "#1E2337"
+  },
+  "fonts": {
+    "family": "Inter"
+  },
+  "appearance": {
+    "default": "system",
+    "strict": false
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs",
+    "codeblocks": {
+      "theme": {
+        "light": "github-light-default",
+        "dark": "dark-plus"
+      }
+    }
+  },
+  "api": {
+    "examples": {
+      "languages": ["curl"]
+    }
+  },
+  "metadata": {
+    "og:site_name": "Python SDK for TON API",
+    "og:description": "Python SDK for TON API — REST API, Streaming, and Webhooks for TON blockchain.",
+    "og:locale": "en_US"
+  },
+  "integrations": {
+    "ga4": {
+      "measurementId": "G-CHZN9VXJEG"
+    }
+  },
+  "feedback": {
+    "thumbsRating": true
+  },
+  "contextual": {
+    "options": ["copy", "claude", "mcp"]
+  },
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "AI Docs",
+      "href": "/llms.txt"
+    },
+    "links": [
+      {
+        "type": "github",
+        "href": "https://github.com/nessshon/tonapi"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/nessshon/tonapi"
+    }
+  },
+  "openapi": [
+    "openapi/openapi.yml"
+  ],
+  "navigation": {
+    "pages": [
+      "index",
+      "guide",
+      {
+        "group": "REST API",
+        "expanded": false,
+        "pages": [
+          "rest/overview",
+          {
+            "group": "Accounts",
+            "pages": [
+              "rest/get_accounts_post",
+              "rest/get_account_get",
+              "rest/account_dns_back_resolve_get",
+              "rest/get_account_jettons_balances_get",
+              "rest/get_account_jetton_balance_get",
+              "rest/get_account_jettons_history_get",
+              "rest/get_account_jetton_history_by_id_get",
+              "rest/get_account_nft_items_get",
+              "rest/get_account_events_get",
+              "rest/get_account_event_get",
+              "rest/get_account_traces_get",
+              "rest/get_account_subscriptions_get",
+              "rest/reindex_account_post",
+              "rest/search_accounts_get",
+              "rest/get_account_dns_expiring_get",
+              "rest/get_account_public_key_get",
+              "rest/get_account_multisigs_get",
+              "rest/get_account_diff_get",
+              "rest/get_account_extra_currency_history_by_id_get",
+              "rest/get_jetton_account_history_by_id_get",
+              "rest/emulate_message_to_account_event_post"
+            ]
+          },
+          {
+            "group": "Blockchain",
+            "pages": [
+              "rest/get_reduced_blockchain_blocks_get",
+              "rest/get_blockchain_block_get",
+              "rest/download_blockchain_block_boc_get",
+              "rest/get_blockchain_masterchain_shards_get",
+              "rest/get_blockchain_masterchain_blocks_get",
+              "rest/get_blockchain_masterchain_transactions_get",
+              "rest/get_blockchain_config_from_block_get",
+              "rest/get_raw_blockchain_config_from_block_get",
+              "rest/get_blockchain_block_transactions_get",
+              "rest/get_blockchain_transaction_get",
+              "rest/get_blockchain_transaction_by_message_hash_get",
+              "rest/get_blockchain_validators_get",
+              "rest/get_blockchain_masterchain_head_get",
+              "rest/get_blockchain_raw_account_get",
+              "rest/get_blockchain_account_transactions_get",
+              "rest/exec_get_method_for_blockchain_account_get",
+              "rest/exec_get_method_with_body_for_blockchain_account_post",
+              "rest/send_blockchain_message_post",
+              "rest/get_blockchain_config_get",
+              "rest/get_raw_blockchain_config_get",
+              "rest/blockchain_account_inspect_get",
+              "rest/get_library_by_hash_get"
+            ]
+          },
+          {
+            "group": "Connect",
+            "pages": [
+              "rest/get_ton_connect_payload_get",
+              "rest/get_account_info_by_state_init_post"
+            ]
+          },
+          {
+            "group": "DNS",
+            "pages": [
+              "rest/get_dns_info_get",
+              "rest/dns_resolve_get",
+              "rest/get_domain_bids_get",
+              "rest/get_all_auctions_get"
+            ]
+          },
+          {
+            "group": "Emulation",
+            "pages": [
+              "rest/decode_message_post",
+              "rest/emulate_message_to_event_post",
+              "rest/emulate_message_to_trace_post",
+              "rest/emulate_message_to_wallet_post",
+              "rest/emulate_message_to_account_event_post"
+            ]
+          },
+          {
+            "group": "Events",
+            "pages": [
+              "rest/get_event_get",
+              "rest/emulate_message_to_event_post"
+            ]
+          },
+          {
+            "group": "ExtraCurrency",
+            "pages": [
+              "rest/get_extra_currency_info_get"
+            ]
+          },
+          {
+            "group": "Gasless",
+            "pages": [
+              "rest/gasless_config_get",
+              "rest/gasless_estimate_post",
+              "rest/gasless_send_post"
+            ]
+          },
+          {
+            "group": "Jettons",
+            "pages": [
+              "rest/get_jettons_get",
+              "rest/get_jetton_info_get",
+              "rest/get_jetton_infos_by_addresses_post",
+              "rest/get_jetton_holders_get",
+              "rest/get_jetton_transfer_payload_get",
+              "rest/get_jettons_events_get"
+            ]
+          },
+          {
+            "group": "Lite Server",
+            "pages": [
+              "rest/get_raw_masterchain_info_get",
+              "rest/get_raw_masterchain_info_ext_get",
+              "rest/get_raw_time_get",
+              "rest/get_raw_blockchain_block_get",
+              "rest/get_raw_blockchain_block_state_get",
+              "rest/get_raw_blockchain_block_header_get",
+              "rest/send_raw_message_post",
+              "rest/get_raw_account_state_get",
+              "rest/get_raw_shard_info_get",
+              "rest/get_all_raw_shards_info_get",
+              "rest/get_raw_transactions_get",
+              "rest/get_raw_list_block_transactions_get",
+              "rest/get_raw_block_proof_get",
+              "rest/get_raw_config_get",
+              "rest/get_raw_shard_block_proof_get",
+              "rest/get_out_msg_queue_sizes_get"
+            ]
+          },
+          {
+            "group": "Multisig",
+            "pages": [
+              "rest/get_multisig_account_get",
+              "rest/get_multisig_order_get"
+            ]
+          },
+          {
+            "group": "NFT",
+            "pages": [
+              "rest/get_account_nft_history_get",
+              "rest/get_nft_collections_get",
+              "rest/get_nft_collection_get",
+              "rest/get_nft_collection_items_by_addresses_post",
+              "rest/get_items_from_collection_get",
+              "rest/get_nft_items_by_addresses_post",
+              "rest/get_nft_item_by_address_get",
+              "rest/get_nft_history_by_id_get"
+            ]
+          },
+          {
+            "group": "Purchases",
+            "pages": [
+              "rest/get_purchase_history_get"
+            ]
+          },
+          {
+            "group": "Rates",
+            "pages": [
+              "rest/get_rates_get",
+              "rest/get_chart_rates_get",
+              "rest/get_markets_rates_get"
+            ]
+          },
+          {
+            "group": "Staking",
+            "pages": [
+              "rest/get_account_nominators_pools_get",
+              "rest/get_staking_pool_info_get",
+              "rest/get_staking_pool_history_get",
+              "rest/get_staking_pools_get"
+            ]
+          },
+          {
+            "group": "Storage",
+            "pages": [
+              "rest/get_storage_providers_get"
+            ]
+          },
+          {
+            "group": "Traces",
+            "pages": [
+              "rest/get_trace_get",
+              "rest/emulate_message_to_trace_post"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "rest/get_openapi_json_get",
+              "rest/get_openapi_yml_get",
+              "rest/status_get",
+              "rest/address_parse_get"
+            ]
+          },
+          {
+            "group": "Wallet",
+            "pages": [
+              "rest/ton_connect_proof_post",
+              "rest/get_account_seqno_get",
+              "rest/get_wallet_info_get",
+              "rest/get_wallets_by_public_key_get",
+              "rest/get_wallets_by_public_key_bulk_post",
+              "rest/emulate_message_to_wallet_post"
+            ]
+          }
+        ]
+      },
+      {
+        "group": "Streaming",
+        "expanded": false,
+        "pages": [
+          "streaming/overview",
+          "streaming/client",
+          "streaming/events",
+          "streaming/connection"
+        ]
+      },
+      {
+        "group": "Webhooks",
+        "expanded": false,
+        "pages": [
+          "webhooks/overview",
+          "webhooks/client",
+          "webhooks/dispatcher",
+          "webhooks/events"
+        ]
+      }
+    ]
+  },
+  "seo": {
+    "indexing": "navigable",
+    "metatags": {
+      "google-site-verification": "DOi9QAXobYh7LlPn0WPn6gk2gwmAQShs8Dt4QHKZ6NY"
+    }
+  }
+}

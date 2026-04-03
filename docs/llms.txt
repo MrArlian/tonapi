@@ -1,0 +1,243 @@
+# TONAPI Python SDK
+
+> Python SDK for TONAPI — query blockchain data via REST, subscribe to real-time events via SSE/WebSocket, and receive webhook notifications. Python 3.10+, runtime deps: aiohttp 3.9+, pydantic 2.4+.
+
+Install: `pip install pytonapi`. API key is optional for REST (0.24 RPS without key), required for streaming and webhooks. Get one at [tonconsole.com](https://tonconsole.com/).
+
+Networks: `Network.MAINNET` (tonapi.io), `Network.TESTNET` (testnet.tonapi.io), `Network.TETRA` (tetra.tonapi.io).
+
+The SDK has three transports:
+
+- **REST API** — query accounts, blocks, transactions, Jettons, NFTs, DNS, staking, and more. Rate-limited client with automatic retries and exponential backoff for 429/500/502/503/504.
+- **Streaming** — real-time subscriptions via SSE (simpler, single connection) or WebSocket (bidirectional, JSON-RPC 2.0). Subscribe to transactions, blocks, traces, and mempool messages. Automatic reconnection with configurable policy.
+- **Webhooks** — push notifications for account transactions, mempool messages, opcode subscriptions, and new contract deployments. Decorator-based event dispatcher with automatic webhook setup and token verification.
+
+Client: `TonapiRestClient` (async context manager) exposes resource groups as attributes (`client.accounts`, `client.blockchain`, `client.jettons`, etc.). Automatic retries with exponential backoff for 429/500/502/503/504. Without an API key, the SDK auto-limits to ~0.24 RPS (1 per 4 s) client-side; with a key, rate limiting is off unless set explicitly via `rps_limit`. Pass `ApiKey` objects with per-key rate limits (`api_key=[ApiKey("k1", rps_limit=10), ApiKey("k2", rps_limit=25)]`) for key rotation on 429. Streaming: `TonapiStreaming` exposes `TonapiSSE` and `TonapiWebSocket` transports with async iterator subscriptions (`async for event in streaming.sse.subscribe_transactions()`). Webhooks: `TonapiWebhookClient` for HTTP CRUD + `TonapiWebhookDispatcher` for event dispatch with decorators (`@dispatcher.account_tx()`, `@dispatcher.mempool_msg()`, etc.).
+
+Import paths:
+
+```python
+from pytonapi.rest import TonapiRestClient
+from pytonapi.streaming import TonapiStreaming, TonapiSSE, TonapiWebSocket
+from pytonapi.streaming import BlockEvent, TransactionEvent, TraceEvent, MempoolEvent
+from pytonapi.webhook import TonapiWebhookClient, TonapiWebhookDispatcher, TonapiWebhook
+from pytonapi.webhook import WebhookEventType, WebhookInfo, AccountSubscription
+from pytonapi.webhook import AccountTxEvent, MempoolMsgEvent, OpcodeMsgEvent, NewContractsEvent
+from pytonapi.types import Network, Workchain, Opcode, ApiKey, RetryPolicy, RetryRule, ReconnectPolicy
+from pytonapi.utils import raw_to_userfriendly, userfriendly_to_raw, to_nano, to_amount
+from pytonapi.exceptions import TONAPIError
+```
+
+## Docs
+
+- [Overview](https://tonapi.ness.su/index.md): Installation, quick start, networks, API key plans.
+- [Guide](https://tonapi.ness.su/guide.md): Client configuration, sessions, retries, key rotation, utilities, error handling.
+
+## REST API
+
+Query accounts, blocks, transactions, Jettons, NFTs, DNS, staking, and more via the TON API.
+
+- [REST Overview](https://tonapi.ness.su/rest/overview.md): Resource groups, SDK usage, endpoints.
+
+### Accounts
+
+- [Get Accounts](https://tonapi.ness.su/rest/get_accounts_post.md): Get multiple accounts by list of addresses.
+- [Get Account](https://tonapi.ness.su/rest/get_account_get.md): Get account info by address.
+- [Account Dns Back Resolve](https://tonapi.ness.su/rest/account_dns_back_resolve_get.md): Reverse DNS resolve for an account.
+- [Get Account Jettons Balances](https://tonapi.ness.su/rest/get_account_jettons_balances_get.md): All Jetton balances for an account.
+- [Get Account Jetton Balance](https://tonapi.ness.su/rest/get_account_jetton_balance_get.md): Single Jetton balance for an account.
+- [Get Account Jettons History](https://tonapi.ness.su/rest/get_account_jettons_history_get.md): Jetton transfer history for an account.
+- [Get Account Jetton History By Id](https://tonapi.ness.su/rest/get_account_jetton_history_by_id_get.md): Jetton transfer history for a specific Jetton.
+- [Get Account Nft Items](https://tonapi.ness.su/rest/get_account_nft_items_get.md): NFT items owned by an account.
+- [Get Account Events](https://tonapi.ness.su/rest/get_account_events_get.md): Events for an account.
+- [Get Account Event](https://tonapi.ness.su/rest/get_account_event_get.md): Single event for an account by event ID.
+- [Get Account Traces](https://tonapi.ness.su/rest/get_account_traces_get.md): Traces for an account.
+- [Get Account Subscriptions](https://tonapi.ness.su/rest/get_account_subscriptions_get.md): Subscriptions for an account.
+- [Reindex Account](https://tonapi.ness.su/rest/reindex_account_post.md): Trigger account reindexing.
+- [Search Accounts](https://tonapi.ness.su/rest/search_accounts_get.md): Search accounts by name or domain.
+- [Get Account Dns Expiring](https://tonapi.ness.su/rest/get_account_dns_expiring_get.md): DNS domains expiring for an account.
+- [Get Account Public Key](https://tonapi.ness.su/rest/get_account_public_key_get.md): Public key for an account.
+- [Get Account Multisigs](https://tonapi.ness.su/rest/get_account_multisigs_get.md): Multisig wallets for an account.
+- [Get Account Diff](https://tonapi.ness.su/rest/get_account_diff_get.md): Account balance diff for a time period.
+- [Get Account Extra Currency History By Id](https://tonapi.ness.su/rest/get_account_extra_currency_history_by_id_get.md): Extra currency history for an account.
+- [Get Jetton Account History By Id](https://tonapi.ness.su/rest/get_jetton_account_history_by_id_get.md): Jetton account history by Jetton ID.
+- [Emulate Message To Account Event](https://tonapi.ness.su/rest/emulate_message_to_account_event_post.md): Emulate a message and get account event.
+
+### Blockchain
+
+- [Get Reduced Blockchain Blocks](https://tonapi.ness.su/rest/get_reduced_blockchain_blocks_get.md): Reduced blockchain blocks for a time range.
+- [Get Blockchain Block](https://tonapi.ness.su/rest/get_blockchain_block_get.md): Block data by block ID.
+- [Download Blockchain Block Boc](https://tonapi.ness.su/rest/download_blockchain_block_boc_get.md): Download block BOC by block ID.
+- [Get Blockchain Masterchain Shards](https://tonapi.ness.su/rest/get_blockchain_masterchain_shards_get.md): Shards for a masterchain seqno.
+- [Get Blockchain Masterchain Blocks](https://tonapi.ness.su/rest/get_blockchain_masterchain_blocks_get.md): Recent masterchain blocks.
+- [Get Blockchain Masterchain Transactions](https://tonapi.ness.su/rest/get_blockchain_masterchain_transactions_get.md): Recent masterchain transactions.
+- [Get Blockchain Config From Block](https://tonapi.ness.su/rest/get_blockchain_config_from_block_get.md): Blockchain config at a specific block.
+- [Get Raw Blockchain Config From Block](https://tonapi.ness.su/rest/get_raw_blockchain_config_from_block_get.md): Raw blockchain config at a specific block.
+- [Get Blockchain Block Transactions](https://tonapi.ness.su/rest/get_blockchain_block_transactions_get.md): Transactions in a block.
+- [Get Blockchain Transaction](https://tonapi.ness.su/rest/get_blockchain_transaction_get.md): Transaction by hash.
+- [Get Blockchain Transaction By Message Hash](https://tonapi.ness.su/rest/get_blockchain_transaction_by_message_hash_get.md): Transaction by message hash.
+- [Get Blockchain Validators](https://tonapi.ness.su/rest/get_blockchain_validators_get.md): Current validators.
+- [Get Blockchain Masterchain Head](https://tonapi.ness.su/rest/get_blockchain_masterchain_head_get.md): Latest masterchain block.
+- [Get Blockchain Raw Account](https://tonapi.ness.su/rest/get_blockchain_raw_account_get.md): Raw account state from blockchain.
+- [Get Blockchain Account Transactions](https://tonapi.ness.su/rest/get_blockchain_account_transactions_get.md): Transactions for an account from blockchain.
+- [Exec Get Method For Blockchain Account](https://tonapi.ness.su/rest/exec_get_method_for_blockchain_account_get.md): Execute a get-method on a smart contract.
+- [Exec Get Method With Body For Blockchain Account](https://tonapi.ness.su/rest/exec_get_method_with_body_for_blockchain_account_post.md): Execute a get-method with body on a smart contract.
+- [Send Blockchain Message](https://tonapi.ness.su/rest/send_blockchain_message_post.md): Send a signed message to the blockchain.
+- [Get Blockchain Config](https://tonapi.ness.su/rest/get_blockchain_config_get.md): Current blockchain config.
+- [Get Raw Blockchain Config](https://tonapi.ness.su/rest/get_raw_blockchain_config_get.md): Current raw blockchain config.
+- [Blockchain Account Inspect](https://tonapi.ness.su/rest/blockchain_account_inspect_get.md): Inspect account contract type and methods.
+- [Get Library By Hash](https://tonapi.ness.su/rest/get_library_by_hash_get.md): TVM library cell by hash.
+
+### Connect
+
+- [Get Ton Connect Payload](https://tonapi.ness.su/rest/get_ton_connect_payload_get.md): Generate TON Connect payload.
+- [Get Account Info By State Init](https://tonapi.ness.su/rest/get_account_info_by_state_init_post.md): Get account info from state init.
+
+### DNS
+
+- [Get Dns Info](https://tonapi.ness.su/rest/get_dns_info_get.md): DNS info for a domain.
+- [Dns Resolve](https://tonapi.ness.su/rest/dns_resolve_get.md): Resolve a TON DNS domain.
+- [Get Domain Bids](https://tonapi.ness.su/rest/get_domain_bids_get.md): Bids for a domain auction.
+- [Get All Auctions](https://tonapi.ness.su/rest/get_all_auctions_get.md): All active DNS auctions.
+
+### Emulation
+
+- [Decode Message](https://tonapi.ness.su/rest/decode_message_post.md): Decode a BOC message.
+- [Emulate Message To Event](https://tonapi.ness.su/rest/emulate_message_to_event_post.md): Emulate a message and get event.
+- [Emulate Message To Trace](https://tonapi.ness.su/rest/emulate_message_to_trace_post.md): Emulate a message and get execution trace.
+- [Emulate Message To Wallet](https://tonapi.ness.su/rest/emulate_message_to_wallet_post.md): Emulate a message and get wallet event.
+- [Emulate Message To Account Event](https://tonapi.ness.su/rest/emulate_message_to_account_event_post.md): Emulate a message and get account event.
+
+### Events
+
+- [Get Event](https://tonapi.ness.su/rest/get_event_get.md): Get event by ID.
+- [Emulate Message To Event](https://tonapi.ness.su/rest/emulate_message_to_event_post.md): Emulate a message and get event.
+
+### ExtraCurrency
+
+- [Get Extra Currency Info](https://tonapi.ness.su/rest/get_extra_currency_info_get.md): Extra currency info.
+
+### Gasless
+
+- [Gasless Config](https://tonapi.ness.su/rest/gasless_config_get.md): Gasless transfer configuration.
+- [Gasless Estimate](https://tonapi.ness.su/rest/gasless_estimate_post.md): Estimate gasless transfer fees.
+- [Gasless Send](https://tonapi.ness.su/rest/gasless_send_post.md): Send a gasless transfer.
+
+### Jettons
+
+- [Get Jettons](https://tonapi.ness.su/rest/get_jettons_get.md): List Jettons with filters.
+- [Get Jetton Info](https://tonapi.ness.su/rest/get_jetton_info_get.md): Jetton metadata by address.
+- [Get Jetton Infos By Addresses](https://tonapi.ness.su/rest/get_jetton_infos_by_addresses_post.md): Multiple Jetton metadata by addresses.
+- [Get Jetton Holders](https://tonapi.ness.su/rest/get_jetton_holders_get.md): Jetton holders list.
+- [Get Jetton Transfer Payload](https://tonapi.ness.su/rest/get_jetton_transfer_payload_get.md): Jetton transfer payload for a wallet.
+- [Get Jettons Events](https://tonapi.ness.su/rest/get_jettons_events_get.md): Jetton events history.
+
+### Lite Server
+
+- [Get Raw Masterchain Info](https://tonapi.ness.su/rest/get_raw_masterchain_info_get.md): Raw masterchain info from lite server.
+- [Get Raw Masterchain Info Ext](https://tonapi.ness.su/rest/get_raw_masterchain_info_ext_get.md): Extended raw masterchain info.
+- [Get Raw Time](https://tonapi.ness.su/rest/get_raw_time_get.md): Current time from lite server.
+- [Get Raw Blockchain Block](https://tonapi.ness.su/rest/get_raw_blockchain_block_get.md): Raw block data from lite server.
+- [Get Raw Blockchain Block State](https://tonapi.ness.su/rest/get_raw_blockchain_block_state_get.md): Raw block state from lite server.
+- [Get Raw Blockchain Block Header](https://tonapi.ness.su/rest/get_raw_blockchain_block_header_get.md): Raw block header from lite server.
+- [Send Raw Message](https://tonapi.ness.su/rest/send_raw_message_post.md): Send raw message via lite server.
+- [Get Raw Account State](https://tonapi.ness.su/rest/get_raw_account_state_get.md): Raw account state from lite server.
+- [Get Raw Shard Info](https://tonapi.ness.su/rest/get_raw_shard_info_get.md): Raw shard info from lite server.
+- [Get All Raw Shards Info](https://tonapi.ness.su/rest/get_all_raw_shards_info_get.md): All raw shards info from lite server.
+- [Get Raw Transactions](https://tonapi.ness.su/rest/get_raw_transactions_get.md): Raw transactions from lite server.
+- [Get Raw List Block Transactions](https://tonapi.ness.su/rest/get_raw_list_block_transactions_get.md): Raw block transactions list from lite server.
+- [Get Raw Block Proof](https://tonapi.ness.su/rest/get_raw_block_proof_get.md): Raw block proof from lite server.
+- [Get Raw Config](https://tonapi.ness.su/rest/get_raw_config_get.md): Raw network config from lite server.
+- [Get Raw Shard Block Proof](https://tonapi.ness.su/rest/get_raw_shard_block_proof_get.md): Raw shard block proof from lite server.
+- [Get Out Msg Queue Sizes](https://tonapi.ness.su/rest/get_out_msg_queue_sizes_get.md): Outbound message queue sizes.
+
+### Multisig
+
+- [Get Multisig Account](https://tonapi.ness.su/rest/get_multisig_account_get.md): Multisig account info.
+- [Get Multisig Order](https://tonapi.ness.su/rest/get_multisig_order_get.md): Multisig order info.
+
+### NFT
+
+- [Get Account Nft History](https://tonapi.ness.su/rest/get_account_nft_history_get.md): NFT transfer history for an account.
+- [Get Nft Collections](https://tonapi.ness.su/rest/get_nft_collections_get.md): List NFT collections.
+- [Get Nft Collection](https://tonapi.ness.su/rest/get_nft_collection_get.md): NFT collection metadata by address.
+- [Get Nft Collection Items By Addresses](https://tonapi.ness.su/rest/get_nft_collection_items_by_addresses_post.md): NFT items from a collection by addresses.
+- [Get Items From Collection](https://tonapi.ness.su/rest/get_items_from_collection_get.md): All items from an NFT collection.
+- [Get Nft Items By Addresses](https://tonapi.ness.su/rest/get_nft_items_by_addresses_post.md): Multiple NFT items by addresses.
+- [Get Nft Item By Address](https://tonapi.ness.su/rest/get_nft_item_by_address_get.md): Single NFT item by address.
+- [Get Nft History By Id](https://tonapi.ness.su/rest/get_nft_history_by_id_get.md): NFT transfer history by item address.
+
+### Purchases
+
+- [Get Purchase History](https://tonapi.ness.su/rest/get_purchase_history_get.md): Purchase history for an account.
+
+### Rates
+
+- [Get Rates](https://tonapi.ness.su/rest/get_rates_get.md): Current token rates.
+- [Get Chart Rates](https://tonapi.ness.su/rest/get_chart_rates_get.md): Historical chart rates for a token.
+- [Get Markets Rates](https://tonapi.ness.su/rest/get_markets_rates_get.md): Market rates from exchanges.
+
+### Staking
+
+- [Get Account Nominators Pools](https://tonapi.ness.su/rest/get_account_nominators_pools_get.md): Nominator pools for an account.
+- [Get Staking Pool Info](https://tonapi.ness.su/rest/get_staking_pool_info_get.md): Staking pool info by address.
+- [Get Staking Pool History](https://tonapi.ness.su/rest/get_staking_pool_history_get.md): Staking pool APY history.
+- [Get Staking Pools](https://tonapi.ness.su/rest/get_staking_pools_get.md): List available staking pools.
+
+### Storage
+
+- [Get Storage Providers](https://tonapi.ness.su/rest/get_storage_providers_get.md): List storage providers.
+
+### Traces
+
+- [Get Trace](https://tonapi.ness.su/rest/get_trace_get.md): Execution trace by hash.
+- [Emulate Message To Trace](https://tonapi.ness.su/rest/emulate_message_to_trace_post.md): Emulate a message and get execution trace.
+
+### Utilities
+
+- [Get Openapi Json](https://tonapi.ness.su/rest/get_openapi_json_get.md): OpenAPI specification in JSON format.
+- [Get Openapi Yml](https://tonapi.ness.su/rest/get_openapi_yml_get.md): OpenAPI specification in YAML format.
+- [Status](https://tonapi.ness.su/rest/status_get.md): API status and health check.
+- [Address Parse](https://tonapi.ness.su/rest/address_parse_get.md): Parse address into all formats.
+
+### Wallet
+
+- [Ton Connect Proof](https://tonapi.ness.su/rest/ton_connect_proof_post.md): Verify TON Connect proof.
+- [Get Account Seqno](https://tonapi.ness.su/rest/get_account_seqno_get.md): Account sequence number.
+- [Get Wallet Info](https://tonapi.ness.su/rest/get_wallet_info_get.md): Wallet info by address.
+- [Get Wallets By Public Key](https://tonapi.ness.su/rest/get_wallets_by_public_key_get.md): Wallets by public key.
+- [Get Wallets By Public Key Bulk](https://tonapi.ness.su/rest/get_wallets_by_public_key_bulk_post.md): Multiple wallets by public keys.
+- [Emulate Message To Wallet](https://tonapi.ness.su/rest/emulate_message_to_wallet_post.md): Emulate a message and get wallet event.
+
+## Streaming
+
+Real-time blockchain events over SSE and WebSocket.
+
+- [Overview](https://tonapi.ness.su/streaming/overview.md): SSE and WebSocket transports, endpoints, SDK usage.
+- [Client](https://tonapi.ness.su/streaming/client.md): TonapiStreaming constructor, session lifecycle, and SSE/WebSocket transports.
+- [Connection](https://tonapi.ness.su/streaming/connection.md): Reconnect policy, backoff behavior, heartbeat timeout, and graceful shutdown.
+- [Events](https://tonapi.ness.su/streaming/events.md): Streaming event models — TransactionEvent, BlockEvent, TraceEvent, MempoolEvent.
+
+## Webhooks
+
+Push notifications for account transactions, mempool messages, opcode subscriptions, and new contract deployments.
+
+- [Overview](https://tonapi.ness.su/webhooks/overview.md): Event types, subscription management, SDK usage.
+- [Client](https://tonapi.ness.su/webhooks/client.md): TonapiWebhookClient for webhook CRUD and TonapiWebhook for managing subscriptions.
+- [Dispatcher](https://tonapi.ness.su/webhooks/dispatcher.md): Decorator-based event dispatcher with automatic webhook setup and token verification.
+- [Events](https://tonapi.ness.su/webhooks/events.md): Webhook event models, event types, and webhook metadata.
+
+## OpenAPI Specification
+
+- [OpenAPI Spec](https://tonapi.ness.su/openapi/openapi.yml): Full OpenAPI 3.0 specification.
+
+## AI Plugin
+
+- [Claude Code Plugin](https://github.com/nessshon/tonapi/tree/main/skills/tonapi): Install with `/plugin marketplace add nessshon/claude-plugins` then `/plugin install tonapi@nessshon-plugins`. Routing table, CLI runner for executing SDK methods, and per-resource API references for code generation.
+
+## Optional
+
+- [Source Code](https://github.com/nessshon/tonapi): GitHub repository.
+- [PyPI](https://pypi.org/project/pytonapi/): Package registry — `pip install pytonapi`.
+
+Built with [Mintlify](https://mintlify.com).
