@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/github/license/nessshon/tonapi)](https://github.com/nessshon/tonapi/blob/main/LICENSE)
 [![Donate](https://img.shields.io/badge/Donate-TON-blue)](https://tonviewer.com/UQCZq3_Vd21-4y4m7Wc-ej9NFOhh_qvdfAkAYAOHoQ__Ness)
 
-![Image](https://raw.githubusercontent.com/nessshon/tonapi/main/assets/banner.png)
+![Image](https://raw.githubusercontent.com/nessshon/tonapi/main/banner.png)
 
 ![Downloads](https://pepy.tech/badge/pytonapi)
 ![Downloads](https://pepy.tech/badge/pytonapi/month)
@@ -14,9 +14,8 @@
 
 ### Python SDK for [TON API](https://tonapi.io)
 
-Access TON blockchain data via REST API, real-time streaming, and webhooks.
-API key required — obtain at [tonconsole.com](https://tonconsole.com/), docs
-at [docs.tonconsole.com](https://docs.tonconsole.com/).
+Access TON blockchain data via REST API, real-time streaming, and webhooks.  
+API key optional for REST, required for streaming and webhooks — obtain at [tonconsole.com](https://tonconsole.com/).
 
 > For creating wallets, transferring TON, jettons, etc., use [tonutils](https://github.com/nessshon/tonutils).
 
@@ -34,6 +33,17 @@ at [docs.tonconsole.com](https://docs.tonconsole.com/).
 ```bash
 pip install pytonapi
 ```
+
+[Claude Code plugin](https://github.com/nessshon/tonapi/blob/main/skills/tonapi/README.md):
+```
+/plugin marketplace add nessshon/claude-plugins
+/plugin install tonapi@nessshon-plugins
+```
+
+## Documentation
+
+[Documentation](https://tonapi.ness.su/) — API reference, streaming, and webhooks guides.  
+[llms.txt](https://tonapi.ness.su/llms.txt) — auto-generated machine-readable docs for AI tools.
 
 ## Examples
 
