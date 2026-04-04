@@ -117,13 +117,19 @@ class TONAPIGatewayTimeoutError(TONAPIServerError):
 
 
 class TONAPIValidationError(TONAPIError):
-    """Response did not match the expected Pydantic model."""
+    """Response body did not match the expected Pydantic model."""
 
-    def __init__(self, *, model: str, detail: str) -> None:
-        self.model_name = model
-        self.detail = detail
+    model: type
+    errors: list[t.Any]
+
+    def __init__(self, *, model: type, errors: list[t.Any]) -> None:
+        self.model = model
+        self.errors = errors
+        field_hints = ", ".join(f"{e.get('loc', '?')}: {e.get('msg', '')}" for e in errors[:3])
+        if len(errors) > 3:
+            field_hints += f" ... (+{len(errors) - 3} more)"
         super().__init__(
-            f"Validation error for {model}: {detail}",
+            f"Response validation failed for {model.__name__}: {field_hints}",
         )
 
 

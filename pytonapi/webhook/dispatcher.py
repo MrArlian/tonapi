@@ -25,9 +25,7 @@ _EVENT_TYPES: dict[WebhookEventType, type] = {
     WebhookEventType.NEW_CONTRACTS: NewContractsEvent,
 }
 
-_ADAPTERS: dict[WebhookEventType, TypeAdapter[t.Any]] = {
-    key: TypeAdapter(cls) for key, cls in _EVENT_TYPES.items()
-}
+_ADAPTERS: dict[WebhookEventType, TypeAdapter[t.Any]] = {key: TypeAdapter(cls) for key, cls in _EVENT_TYPES.items()}
 
 
 class TonapiWebhookDispatcher:
@@ -147,9 +145,7 @@ class TonapiWebhookDispatcher:
                 info = endpoint_map.get(endpoint)
                 if info is None:
                     continue
-                webhook = TonapiWebhook(
-                    self._client, info.id, info.endpoint, info.token
-                )
+                webhook = TonapiWebhook(self._client, info.id, info.endpoint, info.token)
 
                 if event_type is WebhookEventType.ACCOUNT_TX and self._accounts:
                     await webhook.unsubscribe(list(self._accounts))
@@ -171,9 +167,7 @@ class TonapiWebhookDispatcher:
 
         :return: Event type to path mapping.
         """
-        return {
-            et: handlers[0][2] for et, handlers in self._handlers.items() if handlers
-        }
+        return {et: handlers[0][2] for et, handlers in self._handlers.items() if handlers}
 
     def _resolve_path(self, event_type: WebhookEventType) -> str:
         """Build the local path for an event type.
@@ -185,9 +179,7 @@ class TonapiWebhookDispatcher:
 
     def _build_path_map(self) -> dict[str, WebhookEventType]:
         """Build reverse mapping from path to event type."""
-        return {
-            handlers[0][2]: et for et, handlers in self._handlers.items() if handlers
-        }
+        return {handlers[0][2]: et for et, handlers in self._handlers.items() if handlers}
 
     def account_tx(
         self,
@@ -260,8 +252,7 @@ class TonapiWebhookDispatcher:
         """
         if event_type not in _EVENT_TYPES:
             raise ValueError(
-                f"Unknown event type {event_type!r}. "
-                f"Expected one of: {', '.join(et.value for et in WebhookEventType)}"
+                f"Unknown event type {event_type!r}. Expected one of: {', '.join(et.value for et in WebhookEventType)}"
             )
         account_filter = frozenset(accounts) if accounts else None
         resolved_path = path or self._resolve_path(event_type)

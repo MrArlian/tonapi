@@ -4,8 +4,11 @@ import asyncio
 import json
 import typing as t
 
+if t.TYPE_CHECKING:
+    import types
+
 import aiohttp
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from pytonapi.exceptions import (
     TONAPIConnectionError,
@@ -23,6 +26,18 @@ from pytonapi.types import (
 __all__ = ["BaseClient"]
 
 T = t.TypeVar("T")
+_Self = t.TypeVar("_Self", bound="BaseClient")
+
+_adapter_cache: dict[t.Any, TypeAdapter[t.Any]] = {}
+
+
+def _get_adapter(model: t.Any) -> TypeAdapter[t.Any]:
+    """Return a cached ``TypeAdapter`` for the given model."""
+    adapter = _adapter_cache.get(model)
+    if adapter is None:
+        adapter = TypeAdapter(model)
+        _adapter_cache[model] = adapter
+    return adapter
 
 
 class BaseClient:
@@ -30,8 +45,8 @@ class BaseClient:
 
     def __init__(
         self,
-        api_key: str,
-        base_url: str,
+        api_key: str = "",
+        base_url: str = "",
         *,
         timeout: float = 10.0,
         session: aiohttp.ClientSession | None = None,
@@ -41,7 +56,9 @@ class BaseClient:
     ) -> None:
         """Initialize the base HTTP client.
 
-        :param api_key: TONAPI key. Get one at https://tonconsole.com/.
+        :param api_key: TONAPI key. Optional for REST — without a key
+            requests are throttled to ~0.24 RPS (1 per 4 seconds).
+            Get one at https://tonconsole.com/.
         :param base_url: Base URL for all requests.
         :param timeout: Request timeout in seconds.
         :param session: Optional external ``aiohttp.ClientSession``.
@@ -62,7 +79,7 @@ class BaseClient:
         self._is_external_session = session is not None
         self._retry_policy = retry_policy
 
-    async def create_session(self) -> BaseClient:
+    async def create_session(self: _Self) -> _Self:
         """Create an ``aiohttp.ClientSession`` for making requests.
 
         If an external session was provided via the ``session`` parameter,
@@ -90,7 +107,7 @@ class BaseClient:
             await asyncio.sleep(0)
             self._session = None
 
-    async def __aenter__(self) -> BaseClient:
+    async def __aenter__(self: _Self) -> _Self:
         """Enter the async context manager."""
         await self.create_session()
         return self
@@ -99,7 +116,7 @@ class BaseClient:
         self,
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
-        exc_tb: t.Any | None,
+        exc_tb: types.TracebackType | None,
     ) -> None:
         """Exit the async context manager."""
         await self.close_session()
@@ -109,10 +126,9 @@ class BaseClient:
 
         :return: Merged headers dict.
         """
-        base = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Accept": "application/json",
-        }
+        base: dict[str, str] = {"Accept": "application/json"}
+        if self._api_key:
+            base["Authorization"] = f"Bearer {self._api_key}"
         base.update(self._headers)
         return base
 
@@ -283,9 +299,9 @@ class BaseClient:
         if data is None:
             raise TONAPIError(f"Expected JSON response, got: {text}")
         try:
-            return response_model.model_validate(data)  # type: ignore[attr-defined]
+            return _get_adapter(response_model).validate_python(data)
         except ValidationError as exc:
             raise TONAPIValidationError(
-                model=response_model.__name__,
-                detail=str(exc),
+                model=response_model,
+                errors=exc.errors(),
             ) from exc

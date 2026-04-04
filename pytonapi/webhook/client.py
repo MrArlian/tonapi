@@ -38,7 +38,8 @@ class TonapiWebhookClient(BaseClient):
     ) -> None:
         """Initialize the TONAPI TonapiWebhooks client.
 
-        :param api_key: TONAPI key. Get one at https://tonconsole.com/.
+        :param api_key: TONAPI key. Required for webhooks — unauthenticated
+            requests are rejected. Get one at https://tonconsole.com/.
         :param network: Target network (``Network.MAINNET`` or ``Network.TESTNET``).
         :param base_url: Custom base URL (overrides ``network``).
         :param timeout: Request timeout in seconds.
@@ -190,10 +191,7 @@ class TonapiWebhook:
             f"/webhooks/{self.id}/account-tx/subscriptions",
             params={"offset": offset, "limit": limit},
         )
-        return [
-            AccountSubscription.model_validate(s)
-            for s in data.get("account_tx_subscriptions", [])
-        ]
+        return [AccountSubscription.model_validate(s) for s in data.get("account_tx_subscriptions", [])]
 
     async def subscribe_new_contracts(self) -> None:
         """Subscribe to events about new contract deployments."""

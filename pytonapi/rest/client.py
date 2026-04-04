@@ -27,23 +27,24 @@ class TonapiRestClient(BaseClient, ResourcesMixin):
 
     def __init__(
         self,
-        api_key: str | ApiKey | list[ApiKey],
-        network: Network,
+        api_key: str | ApiKey | list[ApiKey] = "",
+        network: Network = Network.MAINNET,
         *,
         base_url: str | None = None,
         timeout: float = 10.0,
         session: aiohttp.ClientSession | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        rps_limit: int = 0,
-        rps_period: float = 1.0,
+        rps_limit: int | None = None,
+        rps_period: float | None = None,
         retry_policy: RetryPolicy | None = DEFAULT_RETRY_POLICY,
     ) -> None:
         """Initialize the TONAPI client.
 
         :param api_key: TONAPI key, ``ApiKey`` with per-key rate limit,
             or a list of ``ApiKey`` for automatic rotation on HTTP 429.
-            Get one at https://tonconsole.com/.
+            Optional — without a key requests are throttled to ~0.24 RPS
+            (1 per 4 seconds). Get one at https://tonconsole.com/.
         :param network: Target network (``Network.MAINNET`` or ``Network.TESTNET``).
         :param base_url: Custom base URL (overrides ``network``).
         :param timeout: Request timeout in seconds.
@@ -52,10 +53,15 @@ class TonapiRestClient(BaseClient, ResourcesMixin):
             is responsible for managing its lifecycle.
         :param headers: Additional HTTP headers sent with every request.
         :param cookies: Additional cookies sent with every request.
-        :param rps_limit: Maximum requests per second (``0`` disables limiting).
+        :param rps_limit: Maximum requests per second.
             Used only when ``api_key`` is a plain string.
+            ``None`` (default) — auto: ``1`` RPS without a key,
+            disabled with a key. ``0`` — explicitly disabled.
         :param rps_period: Rate-limiter window in seconds.
             Used only when ``api_key`` is a plain string.
+            ``None`` (default) — ``4.0`` s when auto-limiting
+            without a key, ``1.0`` s when ``rps_limit`` is set
+            explicitly.
         :param retry_policy: Retry policy, or ``None`` to disable retries.
         """
         if isinstance(api_key, list):
@@ -71,7 +77,12 @@ class TonapiRestClient(BaseClient, ResourcesMixin):
         else:
             self._key_rotator = None
             initial_key = api_key
-            self._rate_limiter = RateLimiter(rps=rps_limit, period=rps_period) if rps_limit > 0 else None
+            if rps_limit is None:
+                self._rate_limiter = RateLimiter(rps=1, period=rps_period or 4.0) if not api_key else None
+            elif rps_limit > 0:
+                self._rate_limiter = RateLimiter(rps=rps_limit, period=rps_period or 1.0)
+            else:
+                self._rate_limiter = None
 
         super().__init__(
             api_key=initial_key,
