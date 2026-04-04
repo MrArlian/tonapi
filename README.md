@@ -51,8 +51,19 @@ pip install pytonapi
 
 - [Get account info](https://github.com/nessshon/tonapi/blob/main/examples/get_account_info.py)
 - [Get account transactions](https://github.com/nessshon/tonapi/blob/main/examples/get_account_transactions.py)
+- [Get jetton info](https://github.com/nessshon/tonapi/blob/main/examples/get_jetton_info.py)
 - [Get NFTs by owner](https://github.com/nessshon/tonapi/blob/main/examples/get_nft_by_owner.py)
 - [Get NFTs by collection](https://github.com/nessshon/tonapi/blob/main/examples/get_nft_by_collection.py)
+
+**Emulation & Sending**
+
+- [Send message](https://github.com/nessshon/tonapi/blob/main/examples/send_message.py)
+- [Emulate message](https://github.com/nessshon/tonapi/blob/main/examples/emulate_message.py)
+
+**Transfers** (requires [tonutils](https://github.com/nessshon/tonutils))
+
+- [Transfer TON](https://github.com/nessshon/tonapi/blob/main/examples/transfer_ton.py)
+- [Gasless transfer](https://github.com/nessshon/tonapi/blob/main/examples/transfer_gasless.py)
 
 **Streaming** (SSE & WebSocket)
 
@@ -63,11 +74,6 @@ pip install pytonapi
 
 - [FastAPI webhook server](https://github.com/nessshon/tonapi/blob/main/examples/webhook_fastapi.py)
 - [aiohttp webhook server](https://github.com/nessshon/tonapi/blob/main/examples/webhook_aiohttp.py)
-
-**Transfers** (requires [tonutils](https://github.com/nessshon/tonutils))
-
-- [Transfer TON](https://github.com/nessshon/tonapi/blob/main/examples/transfer_ton.py)
-- [Gasless transfer](https://github.com/nessshon/tonapi/blob/main/examples/transfer_gasless.py)
 
 ## License
 
