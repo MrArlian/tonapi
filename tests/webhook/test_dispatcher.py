@@ -122,12 +122,8 @@ class TestTonapiWebhookDispatcher(IsolatedAsyncioTestCase):
         async def catch_all(event: AccountTxEvent) -> None:
             all_events.append(event)
 
-        await dispatcher.process(
-            "/account-tx", self._make_account_tx_data(account_id="0:target")
-        )
-        await dispatcher.process(
-            "/account-tx", self._make_account_tx_data(account_id="0:other")
-        )
+        await dispatcher.process("/account-tx", self._make_account_tx_data(account_id="0:target"))
+        await dispatcher.process("/account-tx", self._make_account_tx_data(account_id="0:other"))
 
         self.assertEqual(len(filtered), 1)
         self.assertEqual(len(all_events), 2)
@@ -167,9 +163,7 @@ class TestTonapiWebhookDispatcher(IsolatedAsyncioTestCase):
         self.assertEqual(received, ["fake_db"])
 
         # process kwargs override constructor defaults
-        await dispatcher.process(
-            "/account-tx", self._make_account_tx_data(), db="override"
-        )
+        await dispatcher.process("/account-tx", self._make_account_tx_data(), db="override")
 
         self.assertEqual(received[-1], "override")
 

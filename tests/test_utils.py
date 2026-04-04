@@ -34,7 +34,6 @@ class TestRawToUserfriendly(TestCase):
 
 
 class TestUserfriendlyToRaw(TestCase):
-
     def test_url_safe(self):
         result = userfriendly_to_raw(USERFRIENDLY_ADDRESS)
         self.assertEqual(result, RAW_ADDRESS)
@@ -62,7 +61,6 @@ class TestUserfriendlyToRaw(TestCase):
 
 
 class TestToNano(TestCase):
-
     def test_int(self):
         self.assertEqual(to_nano(1), 1_000_000_000)
 
@@ -91,7 +89,6 @@ class TestToNano(TestCase):
 
 
 class TestToAmount(TestCase):
-
     def test_basic(self):
         self.assertEqual(to_amount(1_000_000_000), decimal.Decimal("1"))
 

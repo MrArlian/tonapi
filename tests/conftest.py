@@ -18,7 +18,6 @@ RPS_PERIOD = env.float("TONAPI_RPS_PERIOD")
 
 
 class TestTonapiRest(IsolatedAsyncioTestCase):
-
     async def asyncSetUp(self) -> None:
         self.tonapi = TonapiRestClient(
             API_KEY,
@@ -33,7 +32,6 @@ class TestTonapiRest(IsolatedAsyncioTestCase):
 
 
 class TestTonapiWebhook(IsolatedAsyncioTestCase):
-
     async def asyncSetUp(self) -> None:
         self.webhook = TonapiWebhookClient(
             API_KEY,
@@ -46,7 +44,6 @@ class TestTonapiWebhook(IsolatedAsyncioTestCase):
 
 
 class TestTonapiStreaming(IsolatedAsyncioTestCase):
-
     async def asyncSetUp(self) -> None:
         self.streaming = TonapiStreaming(
             API_KEY,
