@@ -1,4 +1,4 @@
-from codegen.generate import models, resources, tests
+from codegen.generate import docs, models, resources, tests
 from codegen.utils import load_config
 
 
@@ -15,6 +15,9 @@ def main() -> None:
     if config.get("with_tests", False):
         print("\n=== Generating tests ===\n")
         tests.run()
+
+    print("\n=== Generating docs ===\n")
+    docs.run()
 
     print("\nAll done!")
 

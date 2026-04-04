@@ -13,8 +13,15 @@ def run_ruff(target: Path) -> None:
     print(f"Running ruff check on {target.name}/...")
     result = subprocess.run(
         [
-            sys.executable, "-m", "ruff", "check", str(target),
-            "--select", "F401,I", "--fix", "--quiet",
+            sys.executable,
+            "-m",
+            "ruff",
+            "check",
+            str(target),
+            "--select",
+            "F401,I",
+            "--fix",
+            "--quiet",
         ],
         capture_output=True,
         text=True,

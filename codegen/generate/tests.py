@@ -97,9 +97,7 @@ def _schema_to_example(
     if schema_type == "string":
         fmt = schema.get("format", "")
         if fmt == "address":
-            return (
-                '"0:97264395BD65A255A429B11326C84128B7D70FFED7949ABAE3036D506BA38621"'
-            )
+            return '"0:97264395BD65A255A429B11326C84128B7D70FFED7949ABAE3036D506BA38621"'
         return '""'
     if schema_type == "integer":
         return "0"
@@ -162,11 +160,7 @@ def _collect_method_info(
             call_args.append((py_name, _default_value(ptype)))
 
     for p in params:
-        if (
-            p.get("in") == "query"
-            and p.get("required", False)
-            and param_default(p) is None
-        ):
+        if p.get("in") == "query" and p.get("required", False) and param_default(p) is None:
             py_name = to_python_name(p["name"])
             ptype = param_python_type(p.get("schema", {}))
             call_args.append((py_name, _default_value(ptype)))

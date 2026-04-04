@@ -42,8 +42,8 @@ def _is_type_alias_schema(schema: dict) -> bool:
 
 
 def _build_schema_to_module(
-        spec: dict,
-        schemas: dict,
+    spec: dict,
+    schemas: dict,
 ) -> dict[str, str]:
     """Map each schema name to a target module.
 
@@ -68,11 +68,11 @@ def _build_schema_to_module(
                         tag_schema_count[module][ref] += 1
 
     schema_to_module: dict[str, str] = {}
-    for schema_name in schemas:
+    for schema_name in sorted(schemas):
         best_module = None
         best_count = 0
-        for module, counts in tag_schema_count.items():
-            c = counts.get(schema_name, 0)
+        for module in sorted(tag_schema_count):
+            c = tag_schema_count[module].get(schema_name, 0)
             if c > best_count:
                 best_count = c
                 best_module = module
@@ -88,19 +88,22 @@ def _build_schema_to_module(
         ref_from: dict[str, dict[str, int]] = defaultdict(
             lambda: defaultdict(int),
         )
-        for name in schema_to_module:
+        for name in sorted(schema_to_module):
             parent_module = schema_to_module[name]
             for ref in collect_refs(schemas.get(name, {})):
                 if ref in unassigned:
                     ref_from[ref][parent_module] += 1
-        for name in list(unassigned):
+        for name in sorted(unassigned):
             if name in ref_from:
-                best = max(ref_from[name], key=ref_from[name].get)
+                best = max(
+                    sorted(ref_from[name]),
+                    key=ref_from[name].get,
+                )
                 schema_to_module[name] = best
                 changed = True
 
     all_modules = sorted(tag_schema_count.keys()) if tag_schema_count else ["common"]
-    for name in set(schemas.keys()) - set(schema_to_module.keys()):
+    for name in sorted(set(schemas.keys()) - set(schema_to_module.keys())):
         schema_to_module[name] = all_modules[0]
 
     return schema_to_module
@@ -134,11 +137,11 @@ def _needs_alias(original: str, python_name: str) -> bool:
 
 
 def _generate_field(
-        field_name: str,
-        prop: dict,
-        required: bool,
-        schemas: dict,
-        enum_names: set[str],
+    field_name: str,
+    prop: dict,
+    required: bool,
+    schemas: dict,
+    enum_names: set[str],
 ) -> str:
     """Generate a single model field line.
 
@@ -182,9 +185,9 @@ def _collect_model_refs(schema: dict) -> set[str]:
 
 
 def _topological_sort(
-        models: dict[str, dict],
-        schema_to_module: dict[str, str],
-        module: str,
+    models: dict[str, dict],
+    schema_to_module: dict[str, str],
+    module: str,
 ) -> list[str]:
     """Sort models within a module so dependencies come first.
 
@@ -193,10 +196,7 @@ def _topological_sort(
     :param module: target module name.
     :return: ordered list of schema names.
     """
-    local = {
-        n for n, m in schema_to_module.items()
-        if m == module and n in models
-    }
+    local = {n for n, m in schema_to_module.items() if m == module and n in models}
     order: list[str] = []
     visited: set[str] = set()
     in_progress: set[str] = set()
@@ -207,7 +207,7 @@ def _topological_sort(
         if name in in_progress:
             return
         in_progress.add(name)
-        for ref in _collect_model_refs(models[name]):
+        for ref in sorted(_collect_model_refs(models[name])):
             if ref in local:
                 visit(ref)
         in_progress.discard(name)
@@ -220,10 +220,10 @@ def _topological_sort(
 
 
 def _build_module_context(
-        module: str,
-        schemas: dict,
-        schema_to_module: dict[str, str],
-        enum_names: set[str],
+    module: str,
+    schemas: dict,
+    schema_to_module: dict[str, str],
+    enum_names: set[str],
 ) -> dict | None:
     """Build template context for a single model module.
 
@@ -279,11 +279,13 @@ def _build_module_context(
 
     for name in type_alias_names:
         type_str = resolve_type(schemas[name], schemas, enum_names)
-        definitions.append({
-            "kind": "alias",
-            "name": name,
-            "type_str": type_str,
-        })
+        definitions.append(
+            {
+                "kind": "alias",
+                "name": name,
+                "type_str": type_str,
+            }
+        )
 
     for name in ordered:
         schema = schemas[name]
@@ -298,28 +300,29 @@ def _build_module_context(
         for field_name, prop in properties.items():
             is_req = field_name in required_set and not prop.get("nullable", False)
             line = _generate_field(
-                field_name, prop, field_name in required_set, schemas, enum_names,
+                field_name,
+                prop,
+                field_name in required_set,
+                schemas,
+                enum_names,
             )
             if is_req:
                 required_fields.append(line)
             else:
                 optional_fields.append(line)
 
-        has_alias = any(
-            _needs_alias(fn, to_python_name(fn)) for fn in properties
+        has_alias = any(_needs_alias(fn, to_python_name(fn)) for fn in properties)
+
+        definitions.append(
+            {
+                "kind": "model",
+                "name": name,
+                "fields": required_fields + optional_fields,
+                "has_alias": has_alias,
+            }
         )
 
-        definitions.append({
-            "kind": "model",
-            "name": name,
-            "fields": required_fields + optional_fields,
-            "has_alias": has_alias,
-        })
-
-    tc_imports = [
-        (mod, sorted(names))
-        for mod, names in sorted(type_checking_cross.items())
-    ]
+    tc_imports = [(mod, sorted(names)) for mod, names in sorted(type_checking_cross.items())]
 
     return {
         "needs_pydantic": needs_pydantic,
@@ -353,10 +356,7 @@ def run() -> None:
     enums_data: list[dict] = []
     for name in sorted(schemas):
         if _is_enum_schema(schemas[name]):
-            members = [
-                (_sanitize_enum_member(v), v)
-                for v in schemas[name]["enum"]
-            ]
+            members = [(_sanitize_enum_member(v), v) for v in schemas[name]["enum"]]
             enums_data.append({"name": name, "members": members})
 
     template = env.get_template("enums.py.j2")
@@ -374,10 +374,7 @@ def run() -> None:
 
         code = template.render(**ctx)
         (MODELS_DIR / f"{module}.py").write_text(code)
-        count = sum(
-            1 for n, m in schema_to_module.items()
-            if m == module and n not in enum_names
-        )
+        count = sum(1 for n, m in schema_to_module.items() if m == module and n not in enum_names)
         print(f"Generated {module}.py ({count} models)")
         modules_generated.add(module)
 
@@ -389,19 +386,13 @@ def run() -> None:
 
     module_imports: list[tuple[str, list[str]]] = []
     for module in sorted(module_to_names):
-        names = [
-            n for n in sorted(module_to_names[module])
-            if n not in enum_names
-        ]
+        names = [n for n in sorted(module_to_names[module]) if n not in enum_names]
         if names:
             module_imports.append((module, names))
 
     rebuild_models: list[str] = []
     for module in sorted(module_to_names):
-        names = [
-            n for n in sorted(module_to_names[module])
-            if n not in enum_names and n not in type_alias_names
-        ]
+        names = [n for n in sorted(module_to_names[module]) if n not in enum_names and n not in type_alias_names]
         rebuild_models.extend(names)
 
     all_names = [f'"{n}"' for n in sorted(schema_to_module.keys())]
@@ -417,7 +408,6 @@ def run() -> None:
     print("Generated __init__.py")
 
     print(
-        f"\nDone! Generated {len(schemas)} schemas "
-        f"across {len(modules_generated)} modules.",
+        f"\nDone! Generated {len(schemas)} schemas across {len(modules_generated)} modules.",
     )
     run_ruff(MODELS_DIR)

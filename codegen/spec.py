@@ -25,10 +25,7 @@ def resolve_ref(ref_path: str, spec: dict) -> dict:
     for i, part in enumerate(parts):
         if not isinstance(obj, dict) or part not in obj:
             traversed = "/".join(parts[:i])
-            raise KeyError(
-                f"Cannot resolve $ref '{ref_path}': "
-                f"key '{part}' not found at '#{traversed}'"
-            )
+            raise KeyError(f"Cannot resolve $ref '{ref_path}': key '{part}' not found at '#{traversed}'")
         obj = obj[part]
     return obj
 

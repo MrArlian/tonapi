@@ -29,7 +29,12 @@ TYPE_MAP: dict[str, str] = {
 }
 
 NON_MODEL_TYPES: set[str] = {
-    "str", "int", "float", "bool", "bytes", "dict[str, t.Any]",
+    "str",
+    "int",
+    "float",
+    "bool",
+    "bytes",
+    "dict[str, t.Any]",
 }
 
 _spec_cache: dict | None = None

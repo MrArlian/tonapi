@@ -28,10 +28,10 @@ MAX_LINE_LENGTH: int = 120
 
 
 def _format_docstring(
-        description: str,
-        params: list[tuple[str, str]],
-        return_type: str | None,
-        indent: int = 8,
+    description: str,
+    params: list[tuple[str, str]],
+    return_type: str | None,
+    indent: int = 8,
 ) -> list[str]:
     """Format a reStructuredText docstring.
 
@@ -72,8 +72,10 @@ def _format_docstring(
             lines.append(first_line)
         else:
             wrapped = textwrap.fill(
-                description, width=max_width,
-                initial_indent=prefix + '"""', subsequent_indent=prefix,
+                description,
+                width=max_width,
+                initial_indent=prefix + '"""',
+                subsequent_indent=prefix,
             )
             lines.append(wrapped)
     else:
@@ -91,7 +93,9 @@ def _format_docstring(
             pdesc += "."
         param_line = f":param {pname}: {pdesc}"
         wrapped = textwrap.fill(
-            param_line, width=max_width, subsequent_indent="    ",
+            param_line,
+            width=max_width,
+            subsequent_indent="    ",
         )
         lines.extend(f"{prefix}{line}" for line in wrapped.splitlines())
 
@@ -103,9 +107,9 @@ def _format_docstring(
 
 
 def _build_dict_literal(
-        params: list[dict],
-        param_map: dict[str, str],
-        var_name: str,
+    params: list[dict],
+    param_map: dict[str, str],
+    var_name: str,
 ) -> list[str]:
     """Build a dict literal assignment from API parameters.
 
@@ -130,12 +134,12 @@ def _build_dict_literal(
 
 
 def _generate_method(
-        path: str,
-        http_method: str,
-        operation: dict,
-        spec: dict,
-        tag: str,
-        overrides: dict[str, str],
+    path: str,
+    http_method: str,
+    operation: dict,
+    spec: dict,
+    tag: str,
+    overrides: dict[str, str],
 ) -> tuple[str, set[str]]:
     """Generate a single async method.
 
@@ -247,7 +251,8 @@ def _generate_method(
         fmt_path = path
         for api_name, py_name in path_param_map.items():
             fmt_path = fmt_path.replace(
-                "{" + api_name + "}", "{" + py_name + "}",
+                "{" + api_name + "}",
+                "{" + py_name + "}",
             )
         lines.append(f'        path = f"{fmt_path}"')
     else:
@@ -301,7 +306,12 @@ def run() -> None:
 
         for path, http_method, operation in endpoints:
             code, imports = _generate_method(
-                path, http_method, operation, spec, tag, overrides,
+                path,
+                http_method,
+                operation,
+                spec,
+                tag,
+                overrides,
             )
             methods.append({"code": code})
             all_model_imports |= imports
