@@ -1,0 +1,42 @@
+---
+title: Errors
+description: Exception hierarchy and HTTP error codes
+---
+
+All SDK exceptions inherit from `TONAPIError`. Catch it to handle any error from the library.
+
+```python
+from pytonapi.exceptions import TONAPIError
+```
+
+## Client Errors
+
+| Code  | Exception                     | Description                                              |
+| ----- | ----------------------------- | -------------------------------------------------------- |
+| `400` | `TONAPIBadRequestError`       | Check query parameters, request body, and path arguments.|
+| `401` | `TONAPIUnauthorizedError`     | Invalid API key. Obtain one at tonconsole.com.           |
+| `403` | `TONAPIForbiddenError`        | Check your API key permissions.                          |
+| `404` | `TONAPINotFoundError`         | Resource does not exist.                                 |
+| `405` | `TONAPIMethodNotAllowedError` | Use GET or POST.                                         |
+| `409` | `TONAPIConflictError`         | Resource does not match the expected type.               |
+| `422` | `TONAPIUnprocessableError`    | Parameters failed validation.                            |
+| `429` | `TONAPITooManyRequestsError`  | Rate limit exceeded. Back off and retry.                 |
+
+## Server Errors
+
+| Code  | Exception                     | Description                              |
+| ----- | ----------------------------- | ---------------------------------------- |
+| `500` | `TONAPIInternalServerError`   | Internal server error.                   |
+| `501` | `TONAPINotImplementedError`   | Not implemented.                         |
+| `504` | `TONAPIGatewayTimeoutError`   | Gateway timeout. Retry the request.      |
+
+## Other Exceptions
+
+| Exception                      | When                                                                       |
+| ------------------------------ | -------------------------------------------------------------------------- |
+| `TONAPIConnectionError`        | DNS failure, TCP timeout, or refused connection — before any HTTP response.|
+| `TONAPIValidationError`        | Response body did not match the expected Pydantic model.                   |
+| `TONAPISessionNotCreatedError` | Request made before client session was initialized.                        |
+| `TONAPIStreamingError`         | Transport-level error during streaming.                                    |
+| `TONAPIConnectionLostError`    | Reconnect limit exhausted during streaming.                                |
+| `TONAPIRetryLimitError`        | All retry attempts exhausted.                                              |

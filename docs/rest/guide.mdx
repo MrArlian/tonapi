@@ -1,0 +1,135 @@
+---
+title: Guide
+description: Client setup, sessions, retries, and key rotation
+---
+
+## Client
+
+```python
+from pytonapi.rest import TonapiRestClient
+from pytonapi.types import Network
+
+tonapi = TonapiRestClient("YOUR_API_KEY", Network.MAINNET)
+```
+
+| Parameter      | Default    | Description                                               |
+| -------------- | ---------- | --------------------------------------------------------- |
+| `api_key`      | Optional   | API key or list of keys for [rotation](#key-rotation).    |
+| `network`      | Mainnet    | Mainnet, Testnet, or Tetra.                               |
+| `base_url`     | Optional   | Custom base URL (overrides network selection).            |
+| `timeout`      | 10 seconds | Request timeout.                                          |
+| `session`      | Optional   | External HTTP session to share across clients.            |
+| `headers`      | Optional   | Extra HTTP headers sent with every request.               |
+| `cookies`      | Optional   | Extra cookies sent with every request.                    |
+| `rps_limit`    | Optional   | Client-side rate limit (requests per second).             |
+| `rps_period`   | Optional   | Rate-limiter window in seconds.                           |
+| `retry_policy` | Enabled    | Retry policy. Disable by passing None.                    |
+
+<Note>
+  Without an API key the SDK auto-limits to ~1 request per 4 seconds on the client side to match the server-side throttle. With a key, client-side limiting is off unless set explicitly. Get a key at [tonconsole.com](https://tonconsole.com/).
+</Note>
+
+## Session
+
+<Tabs>
+  <Tab title="Context manager">
+    ```python
+    async with TonapiRestClient("YOUR_API_KEY", Network.MAINNET) as tonapi:
+        account = await tonapi.accounts.get_account(account_id="EQ...")
+    ```
+  </Tab>
+  <Tab title="Manual">
+    ```python
+    tonapi = TonapiRestClient("YOUR_API_KEY", Network.MAINNET)
+    await tonapi.create_session()
+    try:
+        account = await tonapi.accounts.get_account(account_id="EQ...")
+    finally:
+        await tonapi.close_session()
+    ```
+  </Tab>
+  <Tab title="External">
+    ```python
+    import aiohttp
+
+    async with aiohttp.ClientSession() as session:
+        async with TonapiRestClient(
+            "YOUR_API_KEY",
+            Network.MAINNET,
+            session=session,
+        ) as tonapi:
+            account = await tonapi.accounts.get_account(account_id="EQ...")
+    ```
+
+    The client does not close an external session — you manage its lifecycle yourself.
+  </Tab>
+</Tabs>
+
+## Retries
+
+Rate-limited (`429`) and server-error responses are retried automatically with exponential backoff.
+
+| Status codes       | Max retries | Base delay | Max delay | Backoff |
+| ------------------ | ----------- | ---------- | --------- | ------- |
+| 429                | 5           | 0.3 s      | 3 s       | 2x      |
+| 500, 502, 503, 504 | 3           | 0.5 s      | 5 s       | 2x      |
+
+Custom policy:
+
+```python
+from pytonapi.types import RetryPolicy, RetryRule
+
+tonapi = TonapiRestClient(
+    "YOUR_API_KEY",
+    Network.MAINNET,
+    retry_policy=RetryPolicy(rules=(
+        RetryRule(
+            statuses=frozenset({429}),
+            max_retries=10,
+            base_delay=0.5,
+            max_delay=10.0,
+            backoff_factor=2.0,
+        ),
+    )),
+)
+```
+
+| Field            | Default    | Description                           |
+| ---------------- | ---------- | ------------------------------------- |
+| `statuses`       | Required   | HTTP status codes that trigger retry. |
+| `max_retries`    | 3          | Maximum retry attempts.               |
+| `base_delay`     | 1 second   | Initial delay.                        |
+| `max_delay`      | 30 seconds | Upper bound after backoff.            |
+| `backoff_factor` | 2.0        | Multiplier per attempt.               |
+
+The defaults above apply when creating a custom `RetryRule`. The SDK's built-in policy uses tuned values shown in the table above.
+
+<Info>
+  Pass `retry_policy=None` to disable retries entirely.
+</Info>
+
+## Key Rotation
+
+Pass a list of `ApiKey` objects to rotate between keys on rate-limit errors (`429`). Each key carries its own client-side rate limit.
+
+```python
+from pytonapi.types import ApiKey
+
+async with TonapiRestClient(
+    api_key=[
+        ApiKey("key-1", rps_limit=5),
+        ApiKey("key-2", rps_limit=10),
+    ],
+    network=Network.MAINNET,
+) as tonapi:
+    ...
+```
+
+A single `ApiKey` also works — rate limit is taken from the object instead of the constructor `rps_limit` parameter:
+
+```python
+async with TonapiRestClient(api_key=ApiKey("my-key", rps_limit=5)) as tonapi:
+    ...
+```
+
+On `429`, the SDK exhausts all retry attempts for the current key (with backoff), then rotates to the next key and retries with a fresh cycle. Each key uses its own `RateLimiter`.

@@ -70,17 +70,21 @@
     }
   },
   "openapi": [
-    "openapi/openapi.yml"
+    "openapi/openapi.yml",
+    "openapi/webhooks.yml"
   ],
   "navigation": {
     "pages": [
       "index",
-      "guide",
+      "claude-plugin",
+      "utilities",
+      "errors",
       {
         "group": "REST API",
         "expanded": false,
         "pages": [
           "rest/overview",
+          "rest/guide",
           {
             "group": "Accounts",
             "pages": [
@@ -292,23 +296,56 @@
         ]
       },
       {
-        "group": "Streaming",
-        "expanded": false,
-        "pages": [
-          "streaming/overview",
-          "streaming/client",
-          "streaming/events",
-          "streaming/connection"
-        ]
-      },
-      {
         "group": "Webhooks",
         "expanded": false,
         "pages": [
           "webhooks/overview",
-          "webhooks/client",
-          "webhooks/dispatcher",
-          "webhooks/events"
+          "webhooks/guide",
+          {
+            "group": "Management",
+            "pages": [
+              "webhooks/create_webhook_post",
+              "webhooks/list_webhooks_get",
+              "webhooks/delete_webhook_delete"
+            ]
+          },
+          {
+            "group": "Account TX",
+            "pages": [
+              "webhooks/subscribe_account_tx_post",
+              "webhooks/unsubscribe_account_tx_post",
+              "webhooks/get_account_tx_subscriptions_get"
+            ]
+          },
+          {
+            "group": "Mempool MSG",
+            "pages": [
+              "webhooks/subscribe_mempool_post",
+              "webhooks/unsubscribe_mempool_post"
+            ]
+          },
+          {
+            "group": "New Contracts",
+            "pages": [
+              "webhooks/subscribe_new_contracts_post",
+              "webhooks/unsubscribe_new_contracts_post"
+            ]
+          },
+          {
+            "group": "Opcode MSG",
+            "pages": [
+              "webhooks/subscribe_msg_opcode_post",
+              "webhooks/unsubscribe_msg_opcode_post"
+            ]
+          }
+        ]
+      },
+      {
+        "group": "Streaming",
+        "expanded": false,
+        "pages": [
+          "streaming/overview",
+          "streaming/guide"
         ]
       }
     ]

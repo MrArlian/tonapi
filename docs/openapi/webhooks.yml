@@ -1,0 +1,466 @@
+openapi: 3.0.0
+info:
+  title: Webhooks API for TON blockchain
+  version: 1.0.0
+  description: Real-time webhook subscriptions for TON blockchain events
+  contact:
+    name: Support
+    email: support@tonkeeper.com
+servers:
+  - url: "https://rt.tonapi.io"
+  - url: "https://rt-testnet.tonapi.io"
+
+tags:
+  - name: Webhooks
+    description: Webhook CRUD operations
+  - name: Account TX
+    description: Account transaction subscriptions
+  - name: Mempool MSG
+    description: Mempool message subscriptions
+  - name: Opcode MSG
+    description: Opcode message subscriptions
+  - name: New Contracts
+    description: New contract deployment subscriptions
+
+security:
+  - BearerAuth: [ ]
+
+paths:
+  /webhooks:
+    post:
+      operationId: createWebhook
+      summary: Create webhook
+      description: Create a new webhook and configure its callback endpoint. Returns a webhook ID and a secret token for verifying incoming requests.
+      tags:
+        - Webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - endpoint
+              properties:
+                endpoint:
+                  type: string
+                  description: Callback URL for receiving events.
+                  example: "https://your-server.com/webhook"
+      responses:
+        '200':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - webhook_id
+                  - token
+                properties:
+                  webhook_id:
+                    type: integer
+                    description: Webhook identifier.
+                    example: 5
+                  token:
+                    type: string
+                    description: Secret token sent as `Authorization` header with every webhook request.
+                    example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      operationId: listWebhooks
+      summary: List webhooks
+      description: List all configured webhooks with their status and subscription counts.
+      tags:
+        - Webhooks
+      responses:
+        '200':
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - webhooks
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /webhooks/{webhook_id}:
+    delete:
+      operationId: deleteWebhook
+      summary: Delete webhook
+      description: Delete a webhook and all its subscriptions.
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Webhook deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/account-tx/subscribe:
+    post:
+      operationId: subscribeAccountTx
+      summary: Subscribe to account transactions
+      description: Subscribe to transactions on the specified accounts. When a new transaction happens on any of the accounts, TONAPI sends a POST request to the webhook URL.
+      tags:
+        - Account TX
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accounts
+              properties:
+                accounts:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - account_id
+                    properties:
+                      account_id:
+                        type: string
+                        description: Account address in raw format.
+                        example: "0:6ccd325a858c379693fae2bcaab1c2906831a4e10a6c3bb44ee8b615bca1d220"
+      responses:
+        '200':
+          description: Subscribed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/account-tx/unsubscribe:
+    post:
+      operationId: unsubscribeAccountTx
+      summary: Unsubscribe from account transactions
+      description: Unsubscribe from transactions on the specified accounts.
+      tags:
+        - Account TX
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accounts
+              properties:
+                accounts:
+                  type: array
+                  items:
+                    type: string
+                    description: Account address in raw format.
+                    example: "0:6ccd325a858c379693fae2bcaab1c2906831a4e10a6c3bb44ee8b615bca1d220"
+      responses:
+        '200':
+          description: Unsubscribed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/account-tx/subscriptions:
+    get:
+      operationId: getAccountTxSubscriptions
+      summary: Get account TX subscriptions
+      description: List account transaction subscriptions for this webhook with pagination.
+      tags:
+        - Account TX
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Pagination offset.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of results.
+      responses:
+        '200':
+          description: Subscription list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - account_tx_subscriptions
+                properties:
+                  account_tx_subscriptions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccountSubscription'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/mempool/subscribe:
+    post:
+      operationId: subscribeMempoolMsg
+      summary: Subscribe to Mempool MSG
+      description: Subscribe to mempool events. When a new message enters the mempool, TONAPI sends a POST request to the webhook URL.
+      tags:
+        - Mempool MSG
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Subscribed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/mempool/unsubscribe:
+    post:
+      operationId: unsubscribeMempoolMsg
+      summary: Unsubscribe from Mempool MSG
+      description: Unsubscribe from mempool events.
+      tags:
+        - Mempool MSG
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Unsubscribed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/subscribe-new-contracts:
+    post:
+      operationId: subscribeNewContracts
+      summary: Subscribe to new contracts
+      description: Subscribe to events about new contract deployments. When a new contract is deployed to the blockchain, TONAPI sends a POST request to the webhook URL.
+      tags:
+        - New Contracts
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Subscribed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/unsubscribe-new-contracts:
+    post:
+      operationId: unsubscribeNewContracts
+      summary: Unsubscribe from new contracts
+      description: Stop receiving webhook notifications when a new contract is deployed to the blockchain.
+      tags:
+        - New Contracts
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Unsubscribed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/subscribe-msg-opcode/{opcode}:
+    post:
+      operationId: subscribeMsgOpcode
+      summary: Subscribe to Opcode MSG
+      description: |
+        Subscribe to messages with a specific opcode. When a new transaction happens with a message that contains the specified opcode, TONAPI sends a POST request to the webhook URL.
+
+        **Warning:** This subscription triggers webhooks for every message on the blockchain that contains the specified opcode, even if it's unrelated to your accounts.
+      tags:
+        - Opcode MSG
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+        - $ref: '#/components/parameters/Opcode'
+      responses:
+        '200':
+          description: Subscribed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/{webhook_id}/unsubscribe-msg-opcode/{opcode}:
+    post:
+      operationId: unsubscribeMsgOpcode
+      summary: Unsubscribe from Opcode MSG
+      description: Stop receiving webhook notifications for messages with the specified opcode.
+      tags:
+        - Opcode MSG
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+        - $ref: '#/components/parameters/Opcode'
+      responses:
+        '200':
+          description: Unsubscribed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        API key from [tonconsole.com](https://tonconsole.com/). Can also be passed as a `token` query parameter.
+
+  parameters:
+    WebhookId:
+      name: webhook_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Webhook identifier.
+    Opcode:
+      name: opcode
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Opcode in hex format with `0x` prefix.
+      example: "0x7362d09c"
+
+  schemas:
+    WebhookInfo:
+      type: object
+      required:
+        - id
+        - endpoint
+        - token
+        - subscribed_accounts
+        - subscribed_msg_opcodes
+        - subscribed_to_mempool
+        - subscribed_to_new_contracts
+        - status
+        - status_updated_at
+        - last_online_at
+        - status_failed_attempts
+      properties:
+        id:
+          type: integer
+          description: Webhook ID.
+        endpoint:
+          type: string
+          description: Callback URL.
+        token:
+          type: string
+          description: Secret token for Authorization header.
+        subscribed_accounts:
+          type: integer
+          description: Number of subscribed accounts.
+        subscribed_msg_opcodes:
+          type: integer
+          description: Number of subscribed opcodes.
+        subscribed_to_mempool:
+          type: boolean
+          description: Whether mempool subscription is active.
+        subscribed_to_new_contracts:
+          type: boolean
+          description: Whether new contracts subscription is active.
+        status:
+          type: string
+          description: Current webhook status.
+        status_updated_at:
+          type: string
+          description: Last status update timestamp.
+        last_online_at:
+          type: string
+          description: Last online timestamp.
+        status_failed_attempts:
+          type: integer
+          description: Consecutive failed delivery attempts.
+
+    AccountSubscription:
+      type: object
+      required:
+        - account_id
+        - last_delivered_lt
+      properties:
+        account_id:
+          type: string
+          description: Subscribed account address.
+        last_delivered_lt:
+          type: integer
+          description: Last delivered logical time.
+        failed_at:
+          type: string
+          nullable: true
+          description: Timestamp of last failure.
+        failed_lt:
+          type: integer
+          nullable: true
+          description: Logical time of failed delivery.
+        failed_attempts:
+          type: integer
+          nullable: true
+          description: Number of failed delivery attempts.
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+        - status_code
+      properties:
+        message:
+          type: string
+        status_code:
+          type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "bad request"
+            status_code: 400
+    Unauthorized:
+      description: Unauthorized — missing or invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "unauthorized"
+            status_code: 401
+    NotFound:
+      description: Webhook not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "webhook not found"
+            status_code: 404

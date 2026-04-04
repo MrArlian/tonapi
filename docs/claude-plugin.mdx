@@ -1,0 +1,50 @@
+---
+title: AI Plugin
+description: Claude Code plugin for TONAPI
+---
+
+Query TON blockchain through natural language in [Claude Code](https://claude.ai/code). Execute API calls directly or generate SDK code.
+
+## Installation
+
+In Claude Code:
+
+```
+/plugin marketplace add nessshon/claude-plugins
+/plugin install tonapi@nessshon-plugins
+```
+
+Or install locally:
+
+```bash
+git clone https://github.com/nessshon/tonapi.git
+claude --plugin-dir ./tonapi
+```
+
+## Configuration
+
+Create `.env` in the project root:
+
+| Variable            | Description                            | Default    |
+| ------------------- | -------------------------------------- | ---------- |
+| `TONAPI_API_KEY`    | API key from tonconsole.com            | Optional   |
+| `TONAPI_NETWORK`    | mainnet, testnet, or tetra             | mainnet    |
+| `TONAPI_BASE_URL`   | Custom base URL (overrides network)    | auto       |
+| `TONAPI_RPS_LIMIT`  | Max requests per period                | 0          |
+| `TONAPI_RPS_PERIOD` | Rate limit period in seconds           | 1.0        |
+
+## Usage Examples
+
+```
+"What is the balance of ness.ton?"
+"What is the current TON price in USD?"
+"Show jetton balances for ness.ton as a table"
+```
+
+<Tip>
+  Simple data queries are executed directly. For apps, streaming, or webhooks — the plugin generates SDK code.
+</Tip>
+
+<Card title="Plugin Source" icon="github" href="https://github.com/nessshon/tonapi/tree/main/skills/tonapi">
+  Skill definition, reference files, and CLI runner.
+</Card>

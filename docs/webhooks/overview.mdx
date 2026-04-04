@@ -1,17 +1,22 @@
 ---
 title: Overview
-description: push notifications for TON blockchain events via account transactions, mempool messages, opcode subscriptions, and new contract deployments
+description: Push notifications for blockchain events
 ---
 
 Webhooks deliver real-time POST notifications to your server when blockchain events occur.
 The SDK provides a low-level client for webhook CRUD and a high-level dispatcher with
 decorator-based event handling.
 
+<Info>
+  API key is **required** for all webhook operations. Get one at [tonconsole.com](https://tonconsole.com/).
+</Info>
+
 ## Architecture
 
 | Component                 | Description                                                              |
 | ------------------------- | ------------------------------------------------------------------------ |
 | `TonapiWebhookClient`    | HTTP client for webhook CRUD — create, list, delete, subscribe/unsubscribe. |
+| `TonapiWebhook`          | Bound webhook object — manages subscriptions without explicit ID.        |
 | `TonapiWebhookDispatcher`| Decorator-based event dispatcher — register handlers, auto-setup, process incoming events. |
 
 ## Event Types
@@ -19,11 +24,11 @@ decorator-based event handling.
 | Type           | Enum             | Decorator                    | Description                    |
 | -------------- | ---------------- | ---------------------------- | ------------------------------ |
 | Account TX     | `ACCOUNT_TX`     | `@dispatcher.account_tx()`   | Account transactions.          |
-| Mempool        | `MEMPOOL_MSG`    | `@dispatcher.mempool_msg()`  | Pending mempool messages.      |
-| Opcode         | `OPCODE_MSG`     | `@dispatcher.opcode_msg()`   | Messages filtered by opcode.   |
+| Mempool MSG    | `MEMPOOL_MSG`    | `@dispatcher.mempool_msg()`  | Pending mempool messages.      |
+| Opcode MSG     | `OPCODE_MSG`     | `@dispatcher.opcode_msg()`   | Messages filtered by opcode.   |
 | New Contracts  | `NEW_CONTRACTS`  | `@dispatcher.new_contracts()`| New contract deployments.      |
 
-## Base URLs
+## Endpoints
 
 | Network | URL                              |
 | ------- | -------------------------------- |
@@ -35,15 +40,21 @@ decorator-based event handling.
 FastAPI integration with automatic webhook setup and event dispatch:
 
 ```python
-from fastapi import FastAPI, Request
-from pytonapi.webhook import TonapiWebhookClient, TonapiWebhookDispatcher, AccountTxEvent
-from pytonapi.types import Network
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+import uvicorn
+from fastapi import FastAPI, Request, Response
+
+from pytonapi.types import Network
+from pytonapi.webhook import (
+    AccountTxEvent,
+    TonapiWebhookClient,
+    TonapiWebhookDispatcher,
+)
 
 client = TonapiWebhookClient("YOUR_API_KEY", Network.MAINNET)
 dispatcher = TonapiWebhookDispatcher(
-    url="https://example.com",
+    "https://example.com/webhook",
     client=client,
     accounts=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"],
 )
@@ -54,34 +65,112 @@ async def on_tx(event: AccountTxEvent) -> None:
     print(f"TX: {event.tx_hash}")
 
 
-@app.on_event("startup")
-async def startup() -> None:
-    await dispatcher.setup()
-
-
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    await dispatcher.teardown(cleanup=True)
-
-
-@app.post("/account-tx")
-async def webhook_handler(request: Request) -> dict:
+async def handle_webhook(request: Request) -> Response:
     await dispatcher.process(
-        path="/account-tx",
-        data=await request.json(),
+        request.url.path,
+        await request.json(),
         authorization=request.headers.get("Authorization"),
     )
-    return {"ok": True}
+    return Response(status_code=200)
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    await dispatcher.setup()
+    for path in dispatcher.paths.values():
+        application.add_api_route(path, handle_webhook, methods=["POST"])
+    yield
+    await dispatcher.teardown()
+
+
+app = FastAPI(lifespan=lifespan)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
-See [Dispatcher](/webhooks/dispatcher) for multi-event setup, dependency injection, and advanced patterns.
+See [Guide](/webhooks/guide) for the full client API, dispatcher options, and aiohttp integration.
 
 <Note>
-  TON API sends an `Authorization: Bearer {token}` header with every webhook request. The dispatcher verifies it automatically in `process()` — if you handle webhooks manually, verify the token yourself. Webhooks are available for Mainnet and Testnet only (no Tetra).
+  Each webhook has a unique secret token. TON API sends it as `Authorization: Bearer {token}` with every event delivery — use it to verify that incoming requests are genuine. The dispatcher verifies it automatically in `process()`.
 </Note>
 
-| Page                                   | Content                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------- |
-| [Client](/webhooks/client)             | TonapiWebhookClient, TonapiWebhook, WebhookInfo, AccountSubscription.    |
-| [Dispatcher](/webhooks/dispatcher)     | Decorator registration, setup/teardown, process, dependency injection.    |
-| [Events](/webhooks/events)             | Event types and payload models.                                           |
+## Event Models
+
+All models are Pydantic `BaseModel` subclasses.
+
+```python
+from pytonapi.webhook import AccountTxEvent, MempoolMsgEvent, OpcodeMsgEvent, NewContractsEvent
+```
+
+<Accordion title="AccountTxEvent">
+  | Field        | Type                        | Description              |
+  | ------------ | --------------------------- | ------------------------ |
+  | `event_type` | `Literal["account_tx"]`     | Always `"account_tx"`.   |
+  | `account_id` | `str`                       | Account address.         |
+  | `lt`         | `int`                       | Logical time.            |
+  | `tx_hash`    | `str`                       | Transaction hash.        |
+
+  ```json
+  {
+    "event_type": "account_tx",
+    "account_id": "0:408da3b28b6c065a593e10391269baaa9c5f8caebc0c69d9f0aabbab2a99256b",
+    "lt": 49739623000001,
+    "tx_hash": "653e593d581ad40d5d0868fe5d60008e1bfe9d2d4c4fa6b2ee5cd458741d7b59"
+  }
+  ```
+</Accordion>
+
+<Accordion title="MempoolMsgEvent">
+  | Field        | Type                        | Description              |
+  | ------------ | --------------------------- | ------------------------ |
+  | `event_type` | `Literal["mempool_msg"]`    | Always `"mempool_msg"`.  |
+  | `boc`        | `str`                       | Base64-encoded BOC.      |
+
+  ```json
+  {
+    "event_type": "mempool_msg",
+    "boc": "te6cckEBAQEADgAAGEhlbGxvIFRPTiEN"
+  }
+  ```
+</Accordion>
+
+<Accordion title="OpcodeMsgEvent">
+  | Field        | Type                        | Description              |
+  | ------------ | --------------------------- | ------------------------ |
+  | `event_type` | `Literal["opcode_msg"]`     | Always `"opcode_msg"`.   |
+  | `account_id` | `str`                       | Account address.         |
+  | `lt`         | `int`                       | Logical time.            |
+  | `tx_hash`    | `str`                       | Transaction hash.        |
+
+  ```json
+  {
+    "event_type": "opcode_msg",
+    "account_id": "0:408da3b28b6c065a593e10391269baaa9c5f8caebc0c69d9f0aabbab2a99256b",
+    "lt": 49739623000001,
+    "tx_hash": "653e593d581ad40d5d0868fe5d60008e1bfe9d2d4c4fa6b2ee5cd458741d7b59"
+  }
+  ```
+</Accordion>
+
+<Accordion title="NewContractsEvent">
+  | Field        | Type                        | Description              |
+  | ------------ | --------------------------- | ------------------------ |
+  | `event_type` | `Literal["new_contracts"]`  | Always `"new_contracts"`.|
+  | `account_id` | `str`                       | Account address.         |
+  | `lt`         | `int`                       | Logical time.            |
+  | `tx_hash`    | `str`                       | Transaction hash.        |
+
+  ```json
+  {
+    "event_type": "new_contracts",
+    "account_id": "0:408da3b28b6c065a593e10391269baaa9c5f8caebc0c69d9f0aabbab2a99256b",
+    "lt": 49739623000001,
+    "tx_hash": "653e593d581ad40d5d0868fe5d60008e1bfe9d2d4c4fa6b2ee5cd458741d7b59"
+  }
+  ```
+</Accordion>
+
+<Note>
+  All webhook events are finalized — there is no pending/confirmed distinction unlike streaming mempool events.
+</Note>

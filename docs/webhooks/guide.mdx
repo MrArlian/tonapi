@@ -1,0 +1,232 @@
+---
+title: Guide
+description: Client setup, subscriptions, and event handling
+---
+
+## Client
+
+```python
+from pytonapi.webhook import TonapiWebhookClient
+from pytonapi.types import Network
+
+client = TonapiWebhookClient("YOUR_API_KEY", Network.MAINNET)
+```
+
+| Parameter      | Default  | Description                                    |
+| -------------- | -------- | ---------------------------------------------- |
+| `api_key`      | Required | API key from tonconsole.com.                   |
+| `network`      | Required | Mainnet or Testnet.                            |
+| `base_url`     | Optional | Override the default URL.                      |
+| `timeout`      | 10       | Request timeout in seconds.                    |
+| `session`      | Optional | External HTTP session to share across clients. |
+| `headers`      | Optional | Extra HTTP headers.                            |
+| `cookies`      | Optional | Extra cookies.                                 |
+| `retry_policy` | Enabled  | Retry policy, or `None` to disable.            |
+
+
+## Session
+
+<Tabs>
+  <Tab title="Context manager">
+    ```python
+    async with TonapiWebhookClient("YOUR_API_KEY", Network.MAINNET) as client:
+        webhooks = await client.list()
+    ```
+  </Tab>
+  <Tab title="Manual">
+    ```python
+    client = TonapiWebhookClient("YOUR_API_KEY", Network.MAINNET)
+    await client.create_session()
+    try:
+        webhooks = await client.list()
+    finally:
+        await client.close_session()
+    ```
+  </Tab>
+</Tabs>
+
+## Managing Webhooks
+
+```python
+# Create a new webhook — returns a bound TonapiWebhook
+webhook = await client.create("https://example.com/account-tx")
+print(webhook.id, webhook.token)
+
+# List all webhooks — returns list[WebhookInfo]
+webhooks = await client.list()
+
+# Find existing webhook by endpoint, or create a new one
+webhook = await client.ensure("https://example.com/account-tx")
+
+# Get a bound TonapiWebhook by ID
+webhook = await client.get(webhook_id=42)
+
+# Get full webhook info — raises TONAPINotFoundError if not found
+info = await client.get_info(webhook_id=42)
+
+# Delete a webhook and all its subscriptions
+await client.delete(webhook_id=42)
+```
+
+## Subscriptions
+
+A bound `TonapiWebhook` manages subscriptions without requiring an explicit webhook ID.
+
+| Property   | Type  | Description                                                                                  |
+| ---------- | ----- | -------------------------------------------------------------------------------------------- |
+| `id`       | `int` | Webhook identifier.                                                                          |
+| `endpoint` | `str` | Callback URL.                                                                                |
+| `token`    | `str` | Secret token sent as `Authorization: Bearer {token}` — use for verifying incoming requests.  |
+
+### Account transactions
+
+```python
+await webhook.subscribe(["EQ...", "EQ..."])
+await webhook.unsubscribe(["EQ..."])
+subs = await webhook.get_subscriptions(offset=0, limit=50)
+await webhook.sync_accounts(["EQ...", "EQ..."])  # subscribe missing, unsubscribe extra
+```
+
+### Other subscriptions
+
+```python
+await webhook.subscribe_mempool_msg()
+await webhook.unsubscribe_mempool_msg()
+
+await webhook.subscribe_new_contracts()
+await webhook.unsubscribe_new_contracts()
+
+await webhook.subscribe_opcode_msg("0x7362d09c")
+await webhook.unsubscribe_opcode_msg("0x7362d09c")
+```
+
+### Deleting a webhook
+
+```python
+await webhook.delete()
+```
+
+## Event Handling
+
+The dispatcher manages handler registration, webhook lifecycle, and event routing.
+
+```python
+from pytonapi.webhook import TonapiWebhookClient, TonapiWebhookDispatcher
+from pytonapi.types import Network
+
+client = TonapiWebhookClient("YOUR_API_KEY", Network.MAINNET)
+dispatcher = TonapiWebhookDispatcher(
+    "https://example.com",
+    client=client,
+    accounts=["EQ..."],
+    opcodes=["0x7362d09c"],
+)
+```
+
+| Parameter  | Default  | Description                                            |
+| ---------- | -------- | ------------------------------------------------------ |
+| `url`      | `""`     | Public webhook URL prefix.                             |
+| `client`   | Optional | `TonapiWebhookClient` (required for setup/teardown).   |
+| `accounts` | Optional | Account IDs to subscribe.                              |
+| `opcodes`  | Optional | Opcodes for opcode_msg subscriptions.                  |
+| `**kwargs` | —        | Default dependencies injected into handler calls.      |
+
+### Registering handlers
+
+```python
+@dispatcher.account_tx()
+async def handler(event: AccountTxEvent) -> None: ...
+
+@dispatcher.account_tx("EQ...", "EQ...", path="/custom")
+async def handler(event: AccountTxEvent) -> None: ...
+
+@dispatcher.mempool_msg()
+async def handler(event: MempoolMsgEvent) -> None: ...
+
+@dispatcher.opcode_msg()
+async def handler(event: OpcodeMsgEvent) -> None: ...
+
+@dispatcher.new_contracts()
+async def handler(event: NewContractsEvent) -> None: ...
+```
+
+Decorators `account_tx`, `opcode_msg`, `new_contracts` accept `*accounts` for local filtering. All accept `path` for custom URL paths. Default paths: `/account-tx`, `/mempool-msg`, `/opcode-msg`, `/new-contracts`.
+
+Without decorators:
+
+```python
+from pytonapi.webhook import WebhookEventType
+
+dispatcher.register(WebhookEventType.ACCOUNT_TX, handler, "EQ...")
+```
+
+### Lifecycle
+
+`setup()` opens a session, creates webhooks per event type, subscribes, and stores tokens.
+`teardown(cleanup)` closes the session. When `cleanup=True`, unsubscribes from all events first. Subscriptions persist across restarts — on next `setup()`, existing webhooks are reused via `ensure()`.
+
+```python
+await dispatcher.setup()
+await dispatcher.teardown(cleanup=True)
+```
+
+Registered paths (only event types with handlers):
+
+```python
+dispatcher.paths  # {WebhookEventType.ACCOUNT_TX: "/account-tx", ...}
+```
+
+### Processing events
+
+```python
+await dispatcher.process(
+    path="/account-tx",
+    data=payload,
+    authorization=headers.get("Authorization"),
+)
+```
+
+The method validates the token, parses the event with Pydantic, filters by account if specified, and injects dependencies.
+
+### Dependencies
+
+Pass default dependencies via `**kwargs` in the constructor. Handlers receive only parameters they declare in their signature:
+
+```python
+dispatcher = TonapiWebhookDispatcher(url="...", client=client, db=database)
+
+
+@dispatcher.account_tx()
+async def handler(event: AccountTxEvent, db: Database) -> None:
+    await db.save(event)
+```
+
+Per-request dependencies passed to `process()` take priority over constructor defaults. Handlers can be async or sync — the dispatcher awaits async results automatically.
+
+## Models
+
+<Accordion title="WebhookInfo">
+  | Field                        | Type   | Description                              |
+  | ---------------------------- | ------ | ---------------------------------------- |
+  | `id`                         | `int`  | Webhook ID.                              |
+  | `endpoint`                   | `str`  | Callback URL.                            |
+  | `token`                      | `str`  | Secret token for Authorization header.   |
+  | `subscribed_accounts`        | `int`  | Number of subscribed accounts.           |
+  | `subscribed_msg_opcodes`     | `int`  | Number of subscribed opcodes.            |
+  | `subscribed_to_mempool`      | `bool` | Mempool subscription active.             |
+  | `subscribed_to_new_contracts`| `bool` | New contracts subscription active.       |
+  | `status`                     | `str`  | Current webhook status.                  |
+  | `status_updated_at`          | `str`  | Last status update timestamp.            |
+  | `last_online_at`             | `str`  | Last online timestamp.                   |
+  | `status_failed_attempts`     | `int`  | Consecutive failed delivery attempts.    |
+</Accordion>
+
+<Accordion title="AccountSubscription">
+  | Field              | Type           | Description                        |
+  | ------------------ | -------------- | ---------------------------------- |
+  | `account_id`      | `str`          | Subscribed account address.        |
+  | `last_delivered_lt`| `int`          | Last delivered logical time.       |
+  | `failed_at`       | `str \| None`  | Timestamp of last failure.         |
+  | `failed_lt`       | `int \| None`  | Logical time of failed delivery.   |
+  | `failed_attempts` | `int \| None`  | Number of failed delivery attempts.|
+</Accordion>
