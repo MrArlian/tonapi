@@ -2,7 +2,7 @@ from pytonapi.rest import TonapiRestClient
 from pytonapi.types import Network
 
 # TONAPI key — get one at https://tonconsole.com/
-API_KEY = "YOUR_API_KEY"
+API_KEY = ""
 
 # Target network — MAINNET or TESTNET
 NETWORK = Network.MAINNET
