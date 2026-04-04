@@ -30,7 +30,6 @@ def make_stop(seconds: float) -> asyncio.Event:
 
 async def main() -> None:
     async with TonapiStreaming(API_KEY, NETWORK) as streaming:
-
         # 1. Finalized transactions via WebSocket JSON-RPC
         # accounts=None subscribes to ALL accounts
         # operations filters by opcode (e.g., Opcode.JETTON_TRANSFER)
