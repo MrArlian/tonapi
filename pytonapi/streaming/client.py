@@ -28,7 +28,8 @@ class TonapiStreaming(BaseClient):
     ) -> None:
         """Initialize the streaming client.
 
-        :param api_key: TONAPI key. Get one at https://tonconsole.com/.
+        :param api_key: TONAPI key. Required for streaming — unauthenticated
+            connections are rejected. Get one at https://tonconsole.com/.
         :param network: Target network (``Network.MAINNET`` or ``Network.TESTNET``).
         :param base_url: Custom base URL (overrides ``network``).
         :param headers: Additional HTTP headers sent with every request.

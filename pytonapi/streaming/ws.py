@@ -46,7 +46,7 @@ class TonapiWebSocket:
         :param session: Shared ``aiohttp.ClientSession``.
         :param reconnect_policy: Reconnection policy.
         """
-        ws_url = base_url.rstrip("/").replace("https://", "wss://")
+        ws_url = base_url.rstrip("/").replace("https://", "wss://").replace("http://", "ws://")
         self._ws_url = f"{ws_url}/v2/websocket"
         self._session = session
         self._reconnect_policy = reconnect_policy
@@ -193,10 +193,7 @@ class TonapiWebSocket:
                 return
 
             attempt += 1
-            if (
-                self._reconnect_policy.max_reconnects != -1
-                and attempt > self._reconnect_policy.max_reconnects
-            ):
+            if self._reconnect_policy.max_reconnects != -1 and attempt > self._reconnect_policy.max_reconnects:
                 raise TONAPIConnectionLostError(attempts=attempt)
 
             delay = self._reconnect_policy.delay_for_attempt(attempt - 1)

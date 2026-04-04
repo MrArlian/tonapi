@@ -1,4 +1,5 @@
 import asyncio
+import codecs
 import json
 import typing as t
 
@@ -23,27 +24,32 @@ from pytonapi.types import (
     Workchain,
 )
 
+_HEARTBEAT_TIMEOUT: t.Final[float] = 30.0
+
 
 class TonapiSSE:
     """SSE streaming transport for TONAPI."""
-
-    _HEARTBEAT_TIMEOUT: t.Final[float] = 15.0
 
     def __init__(
         self,
         base_url: str,
         session: aiohttp.ClientSession,
         reconnect_policy: ReconnectPolicy = DEFAULT_RECONNECT_POLICY,
+        heartbeat_timeout: float = _HEARTBEAT_TIMEOUT,
     ) -> None:
         """Initialize SSE transport.
 
         :param base_url: Base API URL.
         :param session: Shared ``aiohttp.ClientSession``.
         :param reconnect_policy: Reconnection policy.
+        :param heartbeat_timeout: Seconds without data before the connection
+            is considered dead. TONAPI sends heartbeats every 5 s, so
+            the default 30 s tolerates up to 6 missed heartbeats.
         """
         self._base_url = base_url.rstrip("/")
         self._session = session
         self._reconnect_policy = reconnect_policy
+        self._heartbeat_timeout = heartbeat_timeout
 
     async def subscribe_transactions(
         self,
@@ -164,18 +170,14 @@ class TonapiSSE:
                 return
 
             attempt += 1
-            if (
-                self._reconnect_policy.max_reconnects != -1
-                and attempt > self._reconnect_policy.max_reconnects
-            ):
+            if self._reconnect_policy.max_reconnects != -1 and attempt > self._reconnect_policy.max_reconnects:
                 raise TONAPIConnectionLostError(attempts=attempt)
 
             delay = self._reconnect_policy.delay_for_attempt(attempt - 1)
             await asyncio.sleep(delay)
 
-    @classmethod
     async def _read_events(
-        cls,
+        self,
         response: aiohttp.ClientResponse,
         stop: asyncio.Event | None = None,
     ) -> t.AsyncIterator[dict[str, t.Any]]:
@@ -189,7 +191,7 @@ class TonapiSSE:
         event_type = ""
         data_buf = ""
 
-        async for raw_line in _read_lines(response, timeout=cls._HEARTBEAT_TIMEOUT):
+        async for raw_line in _read_lines(response, timeout=self._heartbeat_timeout):
             if stop and stop.is_set():
                 return
 
@@ -228,6 +230,7 @@ async def _read_lines(
     :return: Async iterator of raw lines.
     :raises TONAPIStreamingError: On heartbeat timeout.
     """
+    decoder = codecs.getincrementaldecoder("utf-8")("replace")
     buffer = ""
     while True:
         try:
@@ -241,7 +244,11 @@ async def _read_lines(
         if not chunk:
             break
 
-        buffer += chunk.decode("utf-8")
+        buffer += decoder.decode(chunk)
         while "\n" in buffer:
             line, buffer = buffer.split("\n", 1)
             yield line
+
+    buffer += decoder.decode(b"", final=True)
+    if buffer:
+        yield buffer
