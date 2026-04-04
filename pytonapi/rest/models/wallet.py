@@ -2,22 +2,9 @@
 
 from __future__ import annotations
 
-import typing as t
-
 from pydantic import BaseModel, Field
 
 from pytonapi.rest.models._enums import AccountStatus
-
-if t.TYPE_CHECKING:
-    from pytonapi.rest.models.accounts import AccountEvent
-    from pytonapi.rest.models.multisig import Risk
-    from pytonapi.rest.models.traces import Trace
-
-
-class MessageConsequences(BaseModel):
-    trace: Trace
-    risk: Risk
-    event: AccountEvent
 
 
 class Seqno(BaseModel):

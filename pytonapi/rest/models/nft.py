@@ -6,10 +6,10 @@ import typing as t
 
 from pydantic import BaseModel, Field
 
-from pytonapi.rest.models._enums import CurrencyType, TrustType
+from pytonapi.rest.models._enums import TrustType
 
 if t.TYPE_CHECKING:
-    from pytonapi.rest.models.accounts import AccountAddress
+    from pytonapi.rest.models.accounts import AccountAddress, Price
 
 NftApprovedBy = list[str]
 
@@ -31,16 +31,6 @@ class NftCollection(BaseModel):
 
 class NftCollections(BaseModel):
     nft_collections: list[NftCollection]
-
-
-class Price(BaseModel):
-    currency_type: CurrencyType
-    value: str
-    decimals: int
-    token_name: str
-    verification: TrustType
-    image: str
-    jetton: str | None = Field(default=None)
 
 
 class Sale(BaseModel):

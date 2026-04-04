@@ -7,7 +7,9 @@ import typing as t
 from pydantic import BaseModel, Field
 
 if t.TYPE_CHECKING:
-    from pytonapi.rest.models.accounts import AccountAddress
+    from pytonapi.rest.models.accounts import AccountAddress, AccountEvent, JettonPreview
+    from pytonapi.rest.models.nft import NftItem
+    from pytonapi.rest.models.traces import Trace
 
 
 class DecodedMessage(BaseModel):
@@ -19,3 +21,23 @@ class DecodedMessage(BaseModel):
 class DecodedRawMessage(BaseModel):
     message: t.Any
     mode: int
+
+
+class JettonQuantity(BaseModel):
+    quantity: str
+    wallet_address: AccountAddress
+    jetton: JettonPreview
+
+
+class Risk(BaseModel):
+    transfer_all_remaining_balance: bool
+    ton: int
+    jettons: list[JettonQuantity]
+    nfts: list[NftItem]
+    total_equivalent: float | None = Field(default=None)
+
+
+class MessageConsequences(BaseModel):
+    trace: Trace
+    risk: Risk
+    event: AccountEvent

@@ -7,7 +7,7 @@ import typing as t
 from pydantic import BaseModel, ConfigDict, Field
 
 if t.TYPE_CHECKING:
-    from pytonapi.rest.models.wallet import MessageConsequences
+    from pytonapi.rest.models.emulation import MessageConsequences
 
 
 class GaslessConfig(BaseModel):

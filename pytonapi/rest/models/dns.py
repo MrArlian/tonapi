@@ -24,6 +24,12 @@ class Auctions(BaseModel):
     total: int
 
 
+class PictureDNS(BaseModel):
+    type: str
+    url: str | None = Field(default=None)
+    bag_id: str | None = Field(default=None)
+
+
 class WalletDNS(BaseModel):
     address: str
     account: AccountAddress
@@ -31,12 +37,6 @@ class WalletDNS(BaseModel):
     has_method_pubkey: bool
     has_method_seqno: bool
     names: list[str]
-
-
-class PictureDNS(BaseModel):
-    type: str
-    url: str | None = Field(default=None)
-    bag_id: str | None = Field(default=None)
 
 
 class DnsRecord(BaseModel):

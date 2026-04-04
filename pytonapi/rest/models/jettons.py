@@ -17,11 +17,6 @@ class JettonHolders(BaseModel):
     total: int
 
 
-class ScaledUI(BaseModel):
-    numerator: str
-    denominator: str
-
-
 class JettonMetadata(BaseModel):
     address: str
     name: str
@@ -33,6 +28,11 @@ class JettonMetadata(BaseModel):
     websites: list[str] | None = Field(default=None)
     catalogs: list[str] | None = Field(default=None)
     custom_payload_api_uri: str | None = Field(default=None)
+
+
+class ScaledUI(BaseModel):
+    numerator: str
+    denominator: str
 
 
 class JettonInfo(BaseModel):
