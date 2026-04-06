@@ -10,8 +10,8 @@ Environment variables:
     TONAPI_API_KEY      — API key (optional for REST, required for streaming)
     TONAPI_NETWORK      — "mainnet", "testnet", or "tetra" (default: mainnet)
     TONAPI_BASE_URL     — Custom base URL (overrides network)
-    TONAPI_RPS_LIMIT    — Rate limit: requests per period (default: 0, disabled)
-    TONAPI_RPS_PERIOD   — Rate limit period in seconds (default: 1.0)
+    TONAPI_RPS_LIMIT    — Rate limit: requests per period (default: auto by SDK)
+    TONAPI_RPS_PERIOD   — Rate limit period in seconds (default: auto by SDK)
 """
 
 from __future__ import annotations
@@ -79,8 +79,10 @@ def _resolve_config(args: argparse.Namespace) -> dict[str, t.Any]:
     api_key = args.api_key if args.api_key is not None else os.getenv("TONAPI_API_KEY", "")
     network_str = args.network or os.getenv("TONAPI_NETWORK", "mainnet")
     base_url = args.base_url or os.getenv("TONAPI_BASE_URL")
-    rps_limit = args.rps_limit if args.rps_limit is not None else int(os.getenv("TONAPI_RPS_LIMIT", "0"))
-    rps_period = args.rps_period if args.rps_period is not None else float(os.getenv("TONAPI_RPS_PERIOD", "1.0"))
+    rps_limit_env = os.getenv("TONAPI_RPS_LIMIT")
+    rps_limit = args.rps_limit if args.rps_limit is not None else (int(rps_limit_env) if rps_limit_env else None)
+    rps_period_env = os.getenv("TONAPI_RPS_PERIOD")
+    rps_period = args.rps_period if args.rps_period is not None else (float(rps_period_env) if rps_period_env else None)
 
     network_map = {
         "mainnet": Network.MAINNET,

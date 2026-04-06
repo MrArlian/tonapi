@@ -32,12 +32,14 @@ cp .env.example .env
 ```
 
 | Variable | Description | Default |
-|----------|-------------|---------|
-| `TONAPI_API_KEY` | API key from [tonconsole.com](https://tonconsole.com/) | — (optional) |
+|---|---|---|
 | `TONAPI_NETWORK` | `mainnet`, `testnet`, or `tetra` | `mainnet` |
-| `TONAPI_BASE_URL` | Custom base URL (overrides network) | auto |
-| `TONAPI_RPS_LIMIT` | Max requests per period | `0` (disabled) |
-| `TONAPI_RPS_PERIOD` | Rate limit period in seconds | `1.0` |
+| `TONAPI_API_KEY` | API key from [tonconsole.com](https://tonconsole.com/) | — |
+| `TONAPI_BASE_URL` | Custom base URL (overrides network) | — |
+| `TONAPI_RPS_LIMIT` | Max requests per period | — |
+| `TONAPI_RPS_PERIOD` | Rate limit period in seconds | — |
+
+Without an API key, rate limiting is applied automatically (~1 req / 4 sec).
 
 ## Structure
 

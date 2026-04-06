@@ -10,13 +10,13 @@ pip install pytonapi
 
 Environment variables (used by the runner script):
 
-| Variable | Description | Runner default |
+| Variable | Description | Default |
 |---|---|---|
-| `TONAPI_API_KEY` | API key (optional — unlocks higher rate limits) | `""` |
-| `TONAPI_NETWORK` | `"mainnet"`, `"testnet"`, or `"tetra"` | `"mainnet"` |
-| `TONAPI_BASE_URL` | Custom base URL (overrides network) | auto |
-| `TONAPI_RPS_LIMIT` | Rate limit: requests per period | `0` (disabled) |
-| `TONAPI_RPS_PERIOD` | Rate limit period in seconds | `1.0` |
+| `TONAPI_NETWORK` | `mainnet`, `testnet`, or `tetra` | `mainnet` |
+| `TONAPI_API_KEY` | API key (optional — unlocks higher rate limits) | — |
+| `TONAPI_BASE_URL` | Custom base URL (overrides network) | — |
+| `TONAPI_RPS_LIMIT` | Max requests per period | — |
+| `TONAPI_RPS_PERIOD` | Rate limit period in seconds | — |
 
 API key is optional — without a key, REST requests are throttled to ~1 per 4 seconds. A key unlocks higher rate limits. Get one at [tonconsole.com](https://tonconsole.com/).
 
