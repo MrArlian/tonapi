@@ -1,10 +1,8 @@
-import asyncio
 from unittest import IsolatedAsyncioTestCase
 
 from environs import Env
 
 from pytonapi.rest import TonapiRestClient
-from pytonapi.streaming import TonapiStreaming
 from pytonapi.types import Network
 from pytonapi.webhook import TonapiWebhookClient
 
@@ -41,26 +39,3 @@ class TestTonapiWebhook(IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self) -> None:
         await self.webhook.close_session()
-
-
-class TestTonapiStreaming(IsolatedAsyncioTestCase):
-    async def asyncSetUp(self) -> None:
-        self.streaming = TonapiStreaming(
-            API_KEY,
-            NETWORK,
-        )
-        await self.streaming.create_session()
-
-    async def asyncTearDown(self) -> None:
-        await self.streaming.close_session()
-
-    @staticmethod
-    def make_stop(seconds: float) -> asyncio.Event:
-        event = asyncio.Event()
-
-        async def _set_after() -> None:
-            await asyncio.sleep(seconds)
-            event.set()
-
-        event._task = asyncio.ensure_future(_set_after())  # type: ignore[attr-defined]
-        return event
