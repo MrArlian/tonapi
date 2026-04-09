@@ -1,234 +1,287 @@
 ---
 title: Guide
-description: Client setup, subscriptions, opcodes, and reconnection
+description: Client setup, handlers, finality, and reconnection
 ---
 
 ## Client
 
-```python
-from pytonapi.streaming import TonapiStreaming
-from pytonapi.types import Network
-
-streaming = TonapiStreaming("YOUR_API_KEY", Network.MAINNET)
-```
-
-| Parameter          | Default  | Description                                          |
-| ------------------ | -------- | ---------------------------------------------------- |
-| `api_key`          | Required | API key from [tonconsole.com](https://tonconsole.com/). |
-| `network`          | Required | Mainnet or Testnet.                                  |
-| `base_url`         | Optional | Override the default URL.                            |
-| `headers`          | Optional | Extra HTTP headers sent with every request.          |
-| `reconnect_policy` | Optional | See [Reconnection](#reconnection).                   |
-
-## Session
-
 <Tabs>
-  <Tab title="Context manager">
+  <Tab title="SSE">
     ```python
-    async with TonapiStreaming("YOUR_API_KEY", Network.MAINNET) as streaming:
-        async for event in streaming.sse.subscribe_transactions():
-            print(event.tx_hash)
+    from pytonapi.streaming import TonapiSSE
+    from pytonapi.types import Network
+
+    sse = TonapiSSE("YOUR_API_KEY", Network.MAINNET)
     ```
+
+    | Parameter           | Default    | Description                                      |
+    | ------------------- | ---------- | ------------------------------------------------ |
+    | `api_key`           | Required   | API key.                                         |
+    | `network`           | Required   | Mainnet or Testnet.                              |
+    | `base_url`          | Optional   | Override the default URL.                        |
+    | `session`           | Optional   | External HTTP session.                           |
+    | `headers`           | Optional   | Extra HTTP headers.                              |
+    | `reconnect_policy`  | Optional   | See [Reconnection](#reconnection).               |
+    | `on_state_change`   | Optional   | See [Connection State](#connection-state).        |
+    | `heartbeat_timeout` | 30 seconds | Seconds before considering the connection dead.  |
   </Tab>
-  <Tab title="Manual">
+  <Tab title="WebSocket">
     ```python
-    streaming = TonapiStreaming("YOUR_API_KEY", Network.MAINNET)
-    await streaming.create_session()
-    try:
-        async for event in streaming.sse.subscribe_transactions():
-            print(event.tx_hash)
-    finally:
-        await streaming.close_session()
+    from pytonapi.streaming import TonapiWebSocket
+    from pytonapi.types import Network
+
+    ws = TonapiWebSocket("YOUR_API_KEY", Network.MAINNET)
     ```
+
+    | Parameter           | Default    | Description                                        |
+    | ------------------- | ---------- | -------------------------------------------------- |
+    | `api_key`           | Required   | API key.                                           |
+    | `network`           | Required   | Mainnet or Testnet.                                |
+    | `base_url`          | Optional   | Override the default URL.                          |
+    | `session`           | Optional   | External HTTP session.                             |
+    | `headers`           | Optional   | Extra HTTP headers.                                |
+    | `reconnect_policy`  | Optional   | See [Reconnection](#reconnection).                  |
+    | `on_state_change`   | Optional   | See [Connection State](#connection-state).          |
+    | `ping_interval`     | 15 seconds | Seconds between keepalive pings.                   |
+    | `subscribe_timeout` | 30 seconds | Seconds to wait for subscribe acknowledgement.     |
   </Tab>
 </Tabs>
 
+## Session
+
+**start** — builds the subscription from registered handlers and dispatches notifications. Blocks until `stop()` is called or a fatal error occurs.
+
+```python
+try:
+    await sse.start(
+        addresses=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"],
+        include_address_book=True,
+        include_metadata=True,
+    )
+finally:
+    await sse.stop()
+```
+
+| Parameter                   | Default  | Description                                       |
+| --------------------------- | -------- | ------------------------------------------------- |
+| `addresses`                 | Optional | Addresses to watch (in any form).                 |
+| `trace_external_hash_norms` | Optional | Trace hashes (required when `on_traces` is used). |
+| `include_address_book`      | False    | Include DNS-resolved names in notifications.      |
+| `include_metadata`          | False    | Include token metadata in notifications.          |
+| `supported_action_types`    | Optional | Advertise supported action types.                 |
+
+Only one `start()` per instance — a second call raises `RuntimeError`.
+
+**stop** — signals the dispatch loop to exit, closes the session, and resets state.
+
+```python
+await sse.stop()
+```
+
+## Handlers
+
+Register event handlers with decorators. Multiple handlers on the same event type run sequentially in registration order.
+
+```python
+from pytonapi.streaming import (
+    ActionsNotification,
+    ActionType,
+    Finality,
+    TransactionsNotification,
+)
+
+
+@sse.on_transactions(min_finality=Finality.PENDING)
+async def on_tx(n: TransactionsNotification) -> None:
+    for tx in n.transactions:
+        print(tx.get("hash"))
+
+
+@sse.on_actions(
+    min_finality=Finality.FINALIZED,
+    action_types=[ActionType.JETTON_TRANSFER, ActionType.TON_TRANSFER],
+)
+async def on_action(n: ActionsNotification) -> None:
+    for a in n.actions:
+        print(a.get("type"))
+```
+
+Three decorator forms are supported:
+
+```python
+@sse.on_transactions                                       # bare
+@sse.on_transactions(min_finality=Finality.CONFIRMED)      # with parameters
+sse.on_transactions(my_callback, min_finality=...)         # programmatic
+```
+
+| Decorator              | Event type             | Extra parameters             |
+| ---------------------- | ---------------------- | ---------------------------- |
+| `on_transactions()`    | transactions           | min_finality                 |
+| `on_actions()`         | actions                | min_finality, action_types   |
+| `on_traces()`          | trace                  | min_finality                 |
+| `on_account_states()`  | account_state_change   | min_finality                 |
+| `on_jettons()`         | jettons_change         | min_finality                 |
+| `on_trace_invalidated()` | trace_invalidated    | --                           |
+
+**on_trace_invalidated** — fires when a previously delivered pending or confirmed trace becomes invalid. Discard cached data for that trace.
+
+```python
+from pytonapi.streaming import TraceInvalidatedNotification
+
+
+@sse.on_trace_invalidated
+async def on_invalidated(n: TraceInvalidatedNotification) -> None:
+    print(f"Trace invalidated: {n.trace_external_hash_norm}")
+```
+
 <Note>
-  Transports (`streaming.sse` and `streaming.ws`) are lazy-initialized on first access and share the session with the parent client. Accessing a transport before `create_session()` raises `TONAPISessionNotCreatedError`.
+  An exception inside a handler halts dispatch for that notification (fail-fast).
 </Note>
 
-## Subscriptions
+## Filtering
 
-All four methods are available on both transports with identical signatures. Use `streaming.sse` or `streaming.ws` interchangeably:
-
-```python
-async for event in streaming.sse.subscribe_transactions(accounts=["EQ..."]):
-    ...
-```
-
-**subscribe_transactions** — returns `AsyncIterator[`[`TransactionEvent`](/streaming/overview#transactionevent)`]`.
-
-| Parameter    | Default  | Description                                                  |
-| ------------ | -------- | ------------------------------------------------------------ |
-| `accounts`   | Optional | Account addresses to monitor. Omit to subscribe to all accounts. |
-| `operations` | Optional | Opcode filters — hex strings like `0x0f8a7ea5` or `Opcode` enum values. |
-| `stop`       | Optional | `asyncio.Event` to stop the subscription gracefully.         |
-
-**subscribe_blocks** — returns `AsyncIterator[`[`BlockEvent`](/streaming/overview#blockevent)`]`.
-
-| Parameter   | Default  | Description                                              |
-| ----------- | -------- | -------------------------------------------------------- |
-| `workchain` | Optional | Filter by workchain. Omit to subscribe to all blocks.    |
-| `stop`      | Optional | `asyncio.Event` to stop the subscription gracefully.     |
-
-**subscribe_traces** — returns `AsyncIterator[`[`TraceEvent`](/streaming/overview#traceevent)`]`.
-
-| Parameter  | Default  | Description                                                       |
-| ---------- | -------- | ----------------------------------------------------------------- |
-| `accounts` | Optional | Account addresses to monitor. Omit to subscribe to all accounts.  |
-| `stop`     | Optional | `asyncio.Event` to stop the subscription gracefully.              |
-
-**subscribe_mempool** — returns `AsyncIterator[`[`MempoolEvent`](/streaming/overview#mempoolevent)`]`.
-
-| Parameter  | Default  | Description                                                       |
-| ---------- | -------- | ----------------------------------------------------------------- |
-| `accounts` | Optional | Account addresses to filter. Omit to subscribe to all messages.   |
-| `stop`     | Optional | `asyncio.Event` to stop the subscription gracefully.              |
-
-## Opcode Filtering
-
-Use the `Opcode` enum or raw hex strings to filter transactions by operation code:
+The streaming API delivers all transactions for the subscribed addresses. To filter by specific criteria (opcode, amount, source, etc.), apply the logic inside the handler:
 
 ```python
-from pytonapi.types import Opcode
+JETTON_TRANSFER = "0x0f8a7ea5"
+JETTON_TRANSFER_NOTIFICATION = "0x7362d09c"
 
-async for event in streaming.sse.subscribe_transactions(
-    accounts=["EQ..."],
-    operations=[Opcode.JETTON_TRANSFER, Opcode.JETTON_NOTIFY],
-):
-    print(f"Jetton activity: {event.tx_hash}")
+
+@sse.on_transactions(min_finality=Finality.FINALIZED)
+async def on_jetton_activity(n: TransactionsNotification) -> None:
+    for tx in n.transactions:
+        in_msg = tx.get("in_msg", {})
+        opcode = in_msg.get("opcode")
+        if opcode in (JETTON_TRANSFER, JETTON_TRANSFER_NOTIFICATION):
+            print(f"Jetton activity (opcode {opcode}): {tx.get('hash')}")
 ```
 
-<Accordion title="Available Opcodes">
-  | Enum                        | Hex            |
-  | --------------------------- | -------------- |
-  | `TEXT_COMMENT`              | `0x00000000`   |
-  | `ENCRYPTED_TEXT_COMMENT`    | `0x2167da4b`   |
-  | `EXCESS`                    | `0xd53276db`   |
-  | `BOUNCE`                    | `0xffffffff`   |
-  | `TOP_UP`                    | `0xd372158c`   |
-  | `JETTON_TRANSFER`           | `0x0f8a7ea5`   |
-  | `JETTON_INTERNAL_TRANSFER`  | `0x178d4519`   |
-  | `JETTON_NOTIFY`             | `0x7362d09c`   |
-  | `JETTON_BURN`               | `0x595f07bc`   |
-  | `JETTON_MINT`               | `0x642b7d07`   |
-  | `JETTON_CHANGE_ADMIN`       | `0x6501f354`   |
-  | `JETTON_CHANGE_METADATA`    | `0xcb862902`   |
-  | `JETTON_CLAIM_ADMIN`        | `0xfb88e119`   |
-  | `JETTON_BURN_NOTIFICATION`  | `0x7bdd97de`   |
-  | `JETTON_CALL_TO`            | `0x235caf52`   |
-  | `JETTON_SET_STATUS`         | `0xeed236d3`   |
-  | `JETTON_UPGRADE`            | `0x2508d66a`   |
-  | `NFT_TRANSFER`              | `0x5fcc3d14`   |
-  | `NFT_OWNERSHIP_ASSIGNED`    | `0x05138d91`   |
-  | `GET_ROYALTY_PARAMS`        | `0x693d3950`   |
-  | `GET_STATIC_DATA`           | `0x2fcb26a2`   |
-  | `REPORT_ROYALTY_PARAMS`     | `0xa8cb00ad`   |
-  | `REPORT_STATIC_DATA`        | `0x8b771735`   |
-  | `OUTBID_NOTIFICATION`       | `0x557cea20`   |
-  | `PROVE_OWNERSHIP`           | `0x04ded148`   |
-  | `OWNERSHIP_PROOF`           | `0x0524c7ae`   |
-  | `SBT_DESTROY`               | `0x1f04537a`   |
-  | `SBT_REVOKE`                | `0x6f89f5e3`   |
-  | `SBT_REQUEST_OWNER`         | `0xd0c3bfea`   |
-  | `SBT_OWNER_INFO`            | `0x0dd607e3`   |
-  | `CHANGE_DNS_RECORD`         | `0x4eb1f0f9`   |
-  | `DELETE_DNS_RECORD`         | `0x4eb1f0f9`   |
-  | `DNS_BALANCE_RELEASE`       | `0x4ed14b65`   |
-  | `TELEITEM_BID_INFO`         | `0x38127de1`   |
-  | `TELEITEM_CANCEL_AUCTION`   | `0x371638ae`   |
-  | `TELEITEM_DEPLOY`           | `0x299a3e15`   |
-  | `TELEITEM_OK`               | `0xa37a0983`   |
-  | `TELEITEM_RETURN_BID`       | `0xa43227e1`   |
-  | `TELEITEM_START_AUCTION`    | `0x487a8e81`   |
-  | `TELEMINT_DEPLOY`           | `0x4637289a`   |
-  | `TELEMINT_DEPLOY_V2`        | `0x4637289b`   |
-  | `MULTISIG_NEW_ORDER`        | `0xf718510f`   |
-  | `MULTISIG_APPROVE`          | `0xa762230f`   |
-  | `MULTISIG_EXECUTE_INTERNAL` | `0xa32c59bf`   |
-</Accordion>
+<Note>
+  Opcodes are hex strings (e.g. `"0x7362d09c"`). See [Action Types](/streaming/overview#action-types) for the full `ActionType` enum.
+</Note>
 
-You can also pass raw hex strings directly: `operations=["0x0f8a7ea5"]`.
+## Finality
 
-<Tip>
-  Full opcode reference: [tonkeeper/tongo/abi/messages.md](https://github.com/tonkeeper/tongo/blob/master/abi/messages.md).
-</Tip>
+Every trace-based notification carries a `finality` field. The lifecycle is monotonic per trace: `pending` → `confirmed` → `finalized`. At any point before `finalized`, a `trace_invalidated` event may signal rollback.
 
-## Graceful Shutdown
+| Level                | Latency    | Guarantee                                     |
+| -------------------- | ---------- | --------------------------------------------- |
+| `Finality.PENDING`   | ~30-100 ms | Speculative / emulated. May be rolled back.   |
+| `Finality.CONFIRMED` | Seconds    | In a signed shard block. Small rollback risk.  |
+| `Finality.FINALIZED` | Seconds    | Committed in masterchain. Irreversible.        |
 
-Pass an `asyncio.Event` to any subscribe method. When set, the iterator exits cleanly after the current iteration — no exception is raised.
+`min_finality` sets the minimum level a handler accepts. Default: `Finality.FINALIZED`.
+
+| min_finality | Pending   | Confirmed | Finalized |
+| ------------ | --------- | --------- | --------- |
+| Pending      | Delivered | Delivered | Delivered |
+| Confirmed    | Skipped   | Delivered | Delivered |
+| Finalized    | Skipped   | Skipped   | Delivered |
+
+Convenience properties: `.is_pending`, `.is_confirmed`, `.is_finalized`.
+
+## Connection State
+
+| State          | Meaning                             |
+| -------------- | ----------------------------------- |
+| `IDLE`         | Not connected.                      |
+| `CONNECTING`   | Opening the connection.             |
+| `SUBSCRIBED`   | Connected, receiving notifications. |
+| `RECONNECTING` | Re-establishing after a drop.       |
+
+Properties: `state`, `is_subscribed`, `is_connecting`, `is_reconnecting`.
 
 ```python
-import asyncio
-import signal
-
-from pytonapi.streaming import TonapiStreaming
-from pytonapi.types import Network
-
-stop = asyncio.Event()
-
-
-async def main() -> None:
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.SIGINT, stop.set)
-    loop.add_signal_handler(signal.SIGTERM, stop.set)
-
-    async with TonapiStreaming("YOUR_API_KEY", Network.MAINNET) as streaming:
-        async for event in streaming.sse.subscribe_transactions(
-            accounts=["EQ..."],
-            stop=stop,
-        ):
-            print(event.tx_hash)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+await sse.wait_subscribed(timeout=10.0)
 ```
 
-<Accordion title="Timed subscription">
-  ```python
-  stop = asyncio.Event()
+Monitor transitions via `on_state_change` callback (sync or async):
 
+```python
+from pytonapi.streaming import ConnectionState
 
-  async def stop_after(seconds: float) -> None:
-      await asyncio.sleep(seconds)
-      stop.set()
+def on_state(state: ConnectionState) -> None:
+    print(state.value)
 
-
-  async with TonapiStreaming("YOUR_API_KEY", Network.MAINNET) as streaming:
-      asyncio.create_task(stop_after(30))
-
-      async for event in streaming.sse.subscribe_transactions(
-          accounts=["EQ..."],
-          stop=stop,
-      ):
-          print(event)
-  ```
-</Accordion>
+sse = TonapiSSE("YOUR_API_KEY", Network.MAINNET, on_state_change=on_state)
+```
 
 ## Reconnection
 
-Transient errors (5xx, 429, heartbeat timeout) are retried automatically with exponential backoff. Client errors (400, 401, 403, 404) raise immediately.
+Automatic reconnection on transient failures (5xx, 429, streaming transport errors, heartbeat timeout). All other client errors (400, 401, 403, 404, 405, 409, 422) are fatal and stop immediately.
 
 ```python
 from pytonapi.types import ReconnectPolicy
 
-async with TonapiStreaming(
-    "YOUR_API_KEY",
-    Network.MAINNET,
-    reconnect_policy=ReconnectPolicy(
-        max_reconnects=10,   # -1 for unlimited
-        delay=0.5,           # initial delay (seconds)
-        max_delay=10.0,      # upper bound after backoff
-        backoff_factor=2.0,  # multiplier per attempt
-    ),
-) as streaming:
-    ...
+policy = ReconnectPolicy(
+    max_reconnects=10,
+    delay=0.5,
+    max_delay=10.0,
+    backoff_factor=2.0,
+)
+sse = TonapiSSE("YOUR_API_KEY", Network.MAINNET, reconnect_policy=policy)
 ```
 
-Default progression: 0.5 s → 1.0 s → 2.0 s → 4.0 s → 8.0 s → 10.0 s (capped). After all attempts are exhausted, `TONAPIConnectionLostError` is raised. SSE heartbeats arrive every 5 seconds — if no data arrives within 30 seconds, a reconnect is triggered.
+| Parameter        | Default | Description                            |
+| ---------------- | ------- | -------------------------------------- |
+| `max_reconnects` | 10      | Maximum attempts (-1 for unlimited).   |
+| `delay`          | 0.5     | Initial delay in seconds.              |
+| `max_delay`      | 10.0    | Upper bound for backoff delay.         |
+| `backoff_factor` | 2.0     | Multiplier applied on each attempt.    |
 
 <Warning>
-  Always close the session properly. After an ungraceful disconnect the server may hold the old session open, counting against your connection limit.
+  Always call `stop()` in a `finally` block. Without a clean disconnect the server may hold the session open, blocking new connections until it times out.
 </Warning>
 
+## Dynamic Subscription
+
+<Note>
+  WebSocket only. SSE does not support dynamic subscription changes.
+</Note>
+
+After `start()` establishes the initial connection, `TonapiWebSocket` can modify subscriptions on the fly without reconnecting.
+
+**dynamic_subscribe** — replace the current subscription (snapshot semantics). All previously watched addresses/traces are replaced by the new set.
+
+```python
+await ws.dynamic_subscribe(
+    addresses=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"],
+    min_finality=Finality.CONFIRMED,
+    include_metadata=True,
+)
+```
+
+| Parameter                   | Default   | Description                              |
+| --------------------------- | --------- | ---------------------------------------- |
+| `addresses`                 | Optional  | Addresses to watch (in any form).        |
+| `trace_external_hash_norms` | Optional  | Trace hashes to watch.                   |
+| `types`                     | Optional  | Event types to receive.                  |
+| `min_finality`              | Finalized | Minimum finality level.                  |
+| `include_address_book`      | False     | Include DNS-resolved names.              |
+| `include_metadata`          | False     | Include token metadata.                  |
+| `action_types`              | Optional  | Filter actions by type.                  |
+| `supported_action_types`    | Optional  | Advertise client-supported action types. |
+
+**dynamic_unsubscribe** — remove addresses or trace hashes from the current subscription.
+
+```python
+await ws.dynamic_unsubscribe(addresses=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"])
+```
+
+| Parameter                   | Default  | Description                    |
+| --------------------------- | -------- | ------------------------------ |
+| `addresses`                 | Optional | Addresses to stop watching.    |
+| `trace_external_hash_norms` | Optional | Trace hashes to stop watching. |
+
+Both methods raise `RuntimeError` if called without an active WebSocket connection, and `TONAPIStreamingError` if the server rejects the request.
+
+## Errors
+
+See [Errors](/errors) for the full exception hierarchy. Streaming-specific exceptions:
+
+| Exception                    | When                                                 |
+| ---------------------------- | ---------------------------------------------------- |
+| `TONAPIStreamingError`       | Transport-level error during streaming.               |
+| `TONAPIConnectionLostError`  | Reconnect limit exhausted. Exposes `.attempts` count. |
+
+All client errors except 429 are fatal — no reconnect is attempted (400, 401, 403, 404, 405, 409, 422).

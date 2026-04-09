@@ -3,45 +3,31 @@ title: Overview
 description: SSE and WebSocket subscriptions with automatic reconnection
 ---
 
-Subscribe to transactions, blocks, traces, and mempool messages in real time. The SDK provides a unified client with two transports and configurable reconnection policy.
+Subscribe to real-time blockchain events over SSE or WebSocket. Both transports use a decorator-based handler API and multiplex all subscriptions over a single connection.
 
 <Info>
-  API key is **required** by the SDK constructor. Get one at [tonconsole.com](https://tonconsole.com/).
+  API key is **required** — unauthenticated connections are rejected. Get a key at [tonconsole.com](https://tonconsole.com/).
 </Info>
 
-## Architecture
-
-| Component          | Description                                                              |
-| ------------------ | ------------------------------------------------------------------------ |
-| `TonapiStreaming`  | Unified client — manages session, exposes `.sse` and `.ws` transports.   |
-| `TonapiSSE`       | One-way stream. HTTP GET, server pushes SSE events.                      |
-| `TonapiWebSocket` | Bidirectional. JSON-RPC 2.0 protocol over WebSocket.                     |
-
-## Subscriptions
-
-Both transports expose the same four subscription methods with identical signatures:
-
-| Method                     | Event model        | Description                             |
-| -------------------------- | ------------------ | --------------------------------------- |
-| `subscribe_transactions()` | [`TransactionEvent`](#transactionevent) | Finalized account transactions.         |
-| `subscribe_blocks()`       | [`BlockEvent`](#blockevent)              | New blocks (filterable by workchain).   |
-| `subscribe_traces()`       | [`TraceEvent`](#traceevent)              | Completed traces for account groups.    |
-| `subscribe_mempool()`      | [`MempoolEvent`](#mempoolevent)          | Pending inbound messages.               |
+| Transport        | Description                                                 |
+| ---------------- | ----------------------------------------------------------- |
+| `TonapiSSE`      | One-way stream. Single POST request, server pushes events.  |
+| `TonapiWebSocket`| Bidirectional. Dynamic subscribe/unsubscribe after connect. |
 
 ## Endpoints
 
 <Tabs>
   <Tab title="SSE">
-    | Network | URL                                       |
-    | ------- | ----------------------------------------- |
-    | Mainnet | `https://tonapi.io/v2/sse/...`            |
-    | Testnet | `https://testnet.tonapi.io/v2/sse/...`    |
+    | Network | URL                                                |
+    | ------- | -------------------------------------------------- |
+    | Mainnet | `https://tonapi.io/streaming/v2/sse`               |
+    | Testnet | `https://testnet.tonapi.io/streaming/v2/sse`       |
   </Tab>
   <Tab title="WebSocket">
-    | Network | URL                                       |
-    | ------- | ----------------------------------------- |
-    | Mainnet | `wss://tonapi.io/v2/websocket`            |
-    | Testnet | `wss://testnet.tonapi.io/v2/websocket`    |
+    | Network | URL                                                |
+    | ------- | -------------------------------------------------- |
+    | Mainnet | `wss://tonapi.io/streaming/v2/ws`                  |
+    | Testnet | `wss://testnet.tonapi.io/streaming/v2/ws`          |
   </Tab>
 </Tabs>
 
@@ -50,104 +36,134 @@ Both transports expose the same four subscription methods with identical signatu
 ```python
 import asyncio
 
-from pytonapi.streaming import TonapiStreaming
 from pytonapi.types import Network
+from pytonapi.streaming import Finality, TonapiSSE, TransactionsNotification
 from pytonapi.exceptions import TONAPIConnectionLostError
+
+sse = TonapiSSE("YOUR_API_KEY", Network.MAINNET)
+
+
+@sse.on_transactions(min_finality=Finality.FINALIZED)
+async def on_tx(n: TransactionsNotification) -> None:
+    for tx in n.transactions:
+        print(tx.get("hash"))
 
 
 async def main() -> None:
-    async with TonapiStreaming("YOUR_API_KEY", Network.MAINNET) as streaming:
-        try:
-            async for event in streaming.sse.subscribe_transactions(
-                accounts=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"],
-            ):
-                print(event.tx_hash)
-        except TONAPIConnectionLostError as e:
-            print(f"Connection lost after {e.attempts} reconnect attempts")
+    try:
+        await sse.start(addresses=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"])
+    except TONAPIConnectionLostError as e:
+        print(f"Connection lost after {e.attempts} reconnect attempts")
+    finally:
+        await sse.stop()
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-Replace `streaming.sse` with `streaming.ws` to switch to WebSocket — the API is identical.
-
 ## Event Models
 
-All models are Pydantic `BaseModel` subclasses.
+All models are Pydantic `BaseModel` subclasses from `pytonapi.streaming`.
 
-```python
-from pytonapi.streaming import TransactionEvent, BlockEvent, TraceEvent, MempoolEvent
-```
-
-<Accordion title="TransactionEvent">
-  | Field        | Type  | Description          |
-  | ------------ | ----- | -------------------- |
-  | `account_id` | `str` | Account address.     |
-  | `lt`         | `int` | Logical time.        |
-  | `tx_hash`    | `str` | Transaction hash.    |
-
-  ```json
-  {
-    "account_id": "0:408da3b28b6c065a593e10391269baaa9c5f8caebc0c69d9f0aabbab2a99256b",
-    "lt": 49739623000001,
-    "tx_hash": "653e593d581ad40d5d0868fe5d60008e1bfe9d2d4c4fa6b2ee5cd458741d7b59"
-  }
-  ```
+<Accordion title="TransactionsNotification">
+| Field                      | Type                      | Description                               |
+| -------------------------- | ------------------------- | ----------------------------------------- |
+| `type`                     | `Literal["transactions"]` | Always `"transactions"`.                  |
+| `finality`                 | `str`                     | `"pending"`, `"confirmed"`, `"finalized"`.|
+| `trace_external_hash_norm` | `str`                     | Links related notifications for a trace.  |
+| `transactions`             | `list[dict]`              | Transaction objects (LT descending).      |
+| `address_book`             | `dict \| None`            | Address -> name mapping.                  |
+| `metadata`                 | `dict \| None`            | Token metadata.                           |
 </Accordion>
 
-<Accordion title="BlockEvent">
-  | Field       | Type  | Description              |
-  | ----------- | ----- | ------------------------ |
-  | `workchain` | `int` | Workchain ID.            |
-  | `shard`     | `str` | Shard identifier.        |
-  | `seqno`     | `int` | Block sequence number.   |
-  | `root_hash` | `str` | Block root hash.         |
-  | `file_hash` | `str` | Block file hash.         |
-
-  ```json
-  {
-    "workchain": -1,
-    "shard": "8000000000000000",
-    "seqno": 42075901,
-    "root_hash": "a1b2c3d4e5f6...",
-    "file_hash": "f6e5d4c3b2a1..."
-  }
-  ```
+<Accordion title="ActionsNotification">
+| Field                      | Type                    | Description                               |
+| -------------------------- | ----------------------- | ----------------------------------------- |
+| `type`                     | `Literal["actions"]`    | Always `"actions"`.                        |
+| `finality`                 | `str`                   | `"pending"`, `"confirmed"`, `"finalized"`.|
+| `trace_external_hash_norm` | `str`                   | Links related notifications for a trace.  |
+| `actions`                  | `list[dict]`            | Classified action objects.                |
+| `address_book`             | `dict \| None`          | Address -> name mapping.                  |
+| `metadata`                 | `dict \| None`          | Token metadata.                           |
 </Accordion>
 
-<Accordion title="TraceEvent">
-  | Field      | Type         | Description                  |
-  | ---------- | ------------ | ---------------------------- |
-  | `accounts` | `list[str]`  | Involved account addresses.  |
-  | `hash`     | `str`        | Trace hash.                  |
-
-  ```json
-  {
-    "accounts": [
-      "0:408da3b28b6c065a593e10391269baaa9c5f8caebc0c69d9f0aabbab2a99256b"
-    ],
-    "hash": "653e593d581ad40d5d0868fe5d60008e1bfe9d2d4c4fa6b2ee5cd458741d7b59"
-  }
-  ```
+<Accordion title="TraceNotification">
+| Field                      | Type                 | Description                         |
+| -------------------------- | -------------------- | ----------------------------------- |
+| `type`                     | `Literal["trace"]`   | Always `"trace"`.                   |
+| `finality`                 | `str`                | Finality level.                     |
+| `trace_external_hash_norm` | `str`                | Trace identifier.                   |
+| `trace`                    | `dict \| None`       | Trace tree structure.               |
+| `transactions`             | `dict \| None`       | Hash -> transaction object map.     |
+| `actions`                  | `list[dict] \| None` | Classified actions for this trace.  |
+| `address_book`             | `dict \| None`       | Address -> name mapping.            |
+| `metadata`                 | `dict \| None`       | Token metadata.                     |
 </Accordion>
 
-<Accordion title="MempoolEvent">
-  | Field               | Type               | Description                                |
-  | ------------------- | ------------------ | ------------------------------------------ |
-  | `boc`               | `str`              | Base64-encoded BOC.                        |
-  | `involved_accounts` | `list[str] \| None` | Involved account addresses, if available. |
+<Accordion title="AccountStateNotification">
+| Field      | Type                              | Description                          |
+| ---------- | --------------------------------- | ------------------------------------ |
+| `type`     | `Literal["account_state_change"]` | Always `"account_state_change"`.     |
+| `finality` | `str`                             | `"confirmed"` or `"finalized"` only. |
+| `account`  | `str`                             | Address in raw format.               |
+| `state`    | `AccountState \| None`            | Account state snapshot.              |
 
-  ```json
-  {
-    "boc": "te6cckEBAQEADgAAGEhlbGxvIFRPTiEN",
-    "involved_accounts": [
-      "0:408da3b28b6c065a593e10391269baaa9c5f8caebc0c69d9f0aabbab2a99256b"
-    ]
-  }
-  ```
+`AccountState` fields: `hash`, `balance`, `account_status`, `data_hash`, `code_hash`.
+</Accordion>
+
+<Accordion title="JettonsNotification">
+| Field          | Type                        | Description                          |
+| -------------- | --------------------------- | ------------------------------------ |
+| `type`         | `Literal["jettons_change"]` | Always `"jettons_change"`.           |
+| `finality`     | `str`                       | `"confirmed"` or `"finalized"` only. |
+| `jetton`       | `JettonWallet \| None`      | Jetton wallet snapshot.              |
+| `address_book` | `dict \| None`              | Address -> name mapping.             |
+| `metadata`     | `dict \| None`              | Token metadata.                      |
+
+`JettonWallet` fields: `address`, `balance`, `owner`, `jetton`, `last_transaction_lt`.
+</Accordion>
+
+<Accordion title="TraceInvalidatedNotification">
+| Field                      | Type                           | Description                    |
+| -------------------------- | ------------------------------ | ------------------------------ |
+| `type`                     | `Literal["trace_invalidated"]` | Always `"trace_invalidated"`.  |
+| `trace_external_hash_norm` | `str`                          | Hash of the invalidated trace. |
+
+Fires when a previously delivered pending or confirmed trace becomes invalid. Discard cached data for that `trace_external_hash_norm`. No invalidation after finalized.
 </Accordion>
 
 <Note>
-  Streaming events are finalized on-chain. Mempool events (`MempoolEvent`) represent pending messages — they may or may not result in a transaction.
+  No invalidation for `account_state_change` or `jettons_change`. Use `Finality.FINALIZED` for irreversible balance data.
 </Note>
+
+## Action Types
+
+<Accordion title="All ActionType values (22)">
+| Enum member                           | Wire value                 |
+| ------------------------------------- | -------------------------- |
+| `ActionType.TON_TRANSFER`             | `ton_transfer`             |
+| `ActionType.JETTON_TRANSFER`          | `jetton_transfer`          |
+| `ActionType.JETTON_SWAP`              | `jetton_swap`              |
+| `ActionType.JETTON_BURN`              | `jetton_burn`              |
+| `ActionType.JETTON_MINT`              | `jetton_mint`              |
+| `ActionType.NFT_MINT`                 | `nft_mint`                 |
+| `ActionType.CALL_CONTRACT`            | `call_contract`            |
+| `ActionType.CONTRACT_DEPLOY`          | `contract_deploy`          |
+| `ActionType.STAKE_DEPOSIT`            | `stake_deposit`            |
+| `ActionType.STAKE_WITHDRAWAL`         | `stake_withdrawal`         |
+| `ActionType.STAKE_WITHDRAWAL_REQUEST` | `stake_withdrawal_request` |
+| `ActionType.DEX_DEPOSIT_LIQUIDITY`    | `dex_deposit_liquidity`    |
+| `ActionType.DEX_WITHDRAW_LIQUIDITY`   | `dex_withdraw_liquidity`   |
+| `ActionType.ELECTION_DEPOSIT`         | `election_deposit`         |
+| `ActionType.ELECTION_RECOVER`         | `election_recover`         |
+| `ActionType.AUCTION_BID`              | `auction_bid`              |
+| `ActionType.CHANGE_DNS`               | `change_dns`               |
+| `ActionType.DELETE_DNS`               | `delete_dns`               |
+| `ActionType.RENEW_DNS`                | `renew_dns`                |
+| `ActionType.TICK_TOCK`                | `tick_tock`                |
+| `ActionType.SUBSCRIBE`                | `subscribe`                |
+| `ActionType.UNSUBSCRIBE`              | `unsubscribe`              |
+</Accordion>
+
+For the raw wire protocol, see the [Streaming API v2 specification](https://gist.github.com/dungeon-master-666/98db8d73e9cd9a1b7802bc06ded5b155).
