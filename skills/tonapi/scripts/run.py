@@ -185,72 +185,96 @@ async def _run_streaming(
     if not api_key:
         _err("Error: streaming requires an API key.\n      Set TONAPI_API_KEY env var or pass --api-key.")
 
-    from pytonapi.streaming import TonapiStreaming
-    from pytonapi.types import Workchain
-
-    duration = kwargs.pop("duration", 60)
-    subscribe_types = kwargs.pop("subscribe", "transactions")
-    if isinstance(subscribe_types, str):
-        subscribe_types = [s.strip() for s in subscribe_types.split(",")]
-
-    accounts_raw = kwargs.pop("accounts", None)
-    accounts = accounts_raw if isinstance(accounts_raw, list) else ([accounts_raw] if accounts_raw else None)
-
-    operations_raw = kwargs.pop("operations", None)
-    operations = operations_raw if isinstance(operations_raw, list) else [operations_raw] if operations_raw else None
-
-    workchain_raw = kwargs.pop("workchain", None)
-    workchain: Workchain | None = None
-    if workchain_raw is not None:
-        workchain = Workchain(int(workchain_raw))
-
-    streaming = TonapiStreaming(
-        api_key,
-        config["network"],
-        base_url=config.get("base_url"),
+    from pytonapi.streaming import (
+        Finality,
+        TonapiSSE,
+        TonapiWebSocket,
     )
 
-    stop_event = asyncio.Event()
+    duration = kwargs.pop("duration", 60)
+    event_types = kwargs.pop("types", "transactions")
+    if isinstance(event_types, str):
+        event_types = [t.strip() for t in event_types.split(",")]
+    finality_str = kwargs.pop("finality", "finalized")
+    try:
+        finality = Finality(finality_str.lower())
+    except ValueError:
+        finality = Finality.FINALIZED
 
-    async def _stop_after(seconds: float) -> None:
-        await asyncio.sleep(seconds)
-        stop_event.set()
+    addresses_raw = kwargs.pop("addresses", None)
+    addresses = addresses_raw if isinstance(addresses_raw, list) else ([addresses_raw] if addresses_raw else None)
+    trace_hashes_raw = kwargs.pop("trace_hashes", None)
+    trace_hashes: list[t.Any] | None
+    if isinstance(trace_hashes_raw, list):
+        trace_hashes = trace_hashes_raw
+    else:
+        trace_hashes = [trace_hashes_raw] if trace_hashes_raw else None
+    include_address_book = kwargs.pop("include_address_book", False)
+    include_metadata = kwargs.pop("include_metadata", False)
+    supported_action_types_raw = kwargs.pop("supported_action_types", None)
+    supported_action_types: list[t.Any] | None
+    if isinstance(supported_action_types_raw, list):
+        supported_action_types = supported_action_types_raw
+    else:
+        supported_action_types = [supported_action_types_raw] if supported_action_types_raw else None
 
-    stop_task = asyncio.create_task(_stop_after(float(duration)))
-
-    transport_obj = getattr(streaming, transport, None)
-    if transport_obj is None:
+    client: TonapiSSE | TonapiWebSocket
+    if transport == "sse":
+        client = TonapiSSE(api_key, config["network"], base_url=config.get("base_url"))
+    elif transport in ("ws", "websocket"):
+        client = TonapiWebSocket(api_key, config["network"], base_url=config.get("base_url"))
+    else:
         _err(f"Error: unknown transport '{transport}'. Use sse or ws.")
 
-    async def _consume(sub_type: str) -> None:
-        subscribe_method = getattr(transport_obj, f"subscribe_{sub_type}", None)
-        if subscribe_method is None:
-            _info(f"Warning: unknown subscription type '{sub_type}', skipping.")
-            _info("Available: transactions, blocks, traces, mempool")
-            return
-
-        sub_kwargs: dict[str, t.Any] = {"stop": stop_event}
-        if sub_type in ("transactions", "traces", "mempool") and accounts:
-            sub_kwargs["accounts"] = accounts
-        if sub_type == "transactions" and operations:
-            sub_kwargs["operations"] = operations
-        if sub_type == "blocks" and workchain is not None:
-            sub_kwargs["workchain"] = workchain
-
-        async for event in subscribe_method(**sub_kwargs):
-            data = event.model_dump(mode="json") if isinstance(event, BaseModel) else str(event)
+    def _make_handler(event_name: str) -> t.Callable[[t.Any], t.Awaitable[None]]:
+        async def _handler(notification: t.Any) -> None:
+            data = notification.model_dump(mode="json") if isinstance(notification, BaseModel) else str(notification)
             output = json.dumps(
-                {"event": sub_type, "data": data},
+                {"event": event_name, "data": data},
                 indent=2,
                 ensure_ascii=False,
             )
             sys.stdout.write(output + "\n")
 
-    async with streaming:
-        tasks = [asyncio.create_task(_consume(st)) for st in subscribe_types]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        return _handler
 
-    stop_task.cancel()
+    handler_map = {
+        "transactions": ("on_transactions", {"min_finality": finality}),
+        "actions": ("on_actions", {"min_finality": finality}),
+        "traces": ("on_traces", {"min_finality": finality}),
+        "account_states": ("on_account_states", {}),
+        "jettons": ("on_jettons", {}),
+        "trace_invalidated": ("on_trace_invalidated", {}),
+    }
+
+    for event_type in event_types:
+        if event_type not in handler_map:
+            _info(f"Warning: unknown event type '{event_type}', skipping.")
+            continue
+        decorator_name, decorator_kwargs = handler_map[event_type]
+        decorator = getattr(client, decorator_name)
+        handler = _make_handler(event_type)
+        if decorator_kwargs:
+            decorator(**decorator_kwargs)(handler)
+        else:
+            decorator(handler)
+
+    async def _stop_after(seconds: float) -> None:
+        await asyncio.sleep(seconds)
+        await client.stop()
+
+    stop_task = asyncio.create_task(_stop_after(float(duration)))
+    try:
+        await client.start(
+            addresses=addresses,
+            trace_external_hash_norms=trace_hashes,
+            include_address_book=include_address_book,
+            include_metadata=include_metadata,
+            supported_action_types=supported_action_types,
+        )
+    finally:
+        stop_task.cancel()
+        await client.stop()
 
 
 def _load_dotenv() -> None:

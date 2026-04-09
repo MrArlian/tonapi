@@ -1,174 +1,264 @@
 # Streaming
 
-Real-time event subscriptions via SSE or WebSocket. Both transports return async iterators.
+Real-time event subscriptions via SSE or WebSocket. Both transports share the decorator-based handler API from `StreamingBase`.
 
-## TonapiStreaming Constructor
+## SSE Constructor
 
 ```python
-from pytonapi.streaming import TonapiStreaming
+from pytonapi.streaming import TonapiSSE
 from pytonapi.types import Network
 
-streaming = TonapiStreaming(
+client = TonapiSSE(
     api_key: str,
     network: Network,
     *,
     base_url: str | None = None,
+    session: aiohttp.ClientSession | None = None,
     headers: dict[str, str] | None = None,
-    reconnect_policy: ReconnectPolicy = DEFAULT_RECONNECT_POLICY,
+    reconnect_policy: ReconnectPolicy | None = None,
+    on_state_change: Callable[[ConnectionState], Any] | None = None,
+    heartbeat_timeout: float = 30.0,
 )
 ```
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| api_key | str | — | API key from [tonconsole.com](https://tonconsole.com/) |
-| network | `Network` | — | `Network.MAINNET`, `Network.TESTNET`, or `Network.TETRA` |
+| api_key | str | — | API key |
+| network | `Network` | — | `Network.MAINNET` or `Network.TESTNET` |
 | base_url | str \| None | None | Custom base URL (overrides network) |
-| headers | dict \| None | None | Additional HTTP headers |
-| reconnect_policy | `ReconnectPolicy` | default | Reconnect policy (max 10, 0.5s delay, 2x backoff) |
+| session | aiohttp.ClientSession \| None | None | External session (not closed by client) |
+| headers | dict[str, str] \| None | None | Additional HTTP headers |
+| reconnect_policy | `ReconnectPolicy` \| None | None | Custom reconnect policy (default: max 10, 0.5s delay, 2x backoff) |
+| on_state_change | Callable \| None | None | Callback on connection state changes |
+| heartbeat_timeout | float | 30.0 | Seconds before considering connection dead |
 
-Access transports via properties: `streaming.sse` and `streaming.ws`.
+Connects to `POST {base_url}/streaming/v2/sse`.
 
-Use as context manager:
-
-```python
-async with TonapiStreaming("api_key", Network.MAINNET) as streaming:
-    async for event in streaming.sse.subscribe_transactions(...):
-        ...
-```
-
-Or explicit lifecycle:
+## WebSocket Constructor
 
 ```python
-streaming = TonapiStreaming("api_key", Network.MAINNET)
-await streaming.create_session()
-try:
-    async for event in streaming.sse.subscribe_transactions(...):
-        ...
-finally:
-    await streaming.close_session()
-```
+from pytonapi.streaming import TonapiWebSocket
+from pytonapi.types import Network
 
-## SSE Subscriptions
-
-### subscribe_transactions
-
-Subscribe to new transactions in real-time.
-
-```python
-async for event in streaming.sse.subscribe_transactions(
-    accounts: list[str] | None = None,
-    operations: list[str] | None = None,
-    stop: asyncio.Event | None = None,
-) -> AsyncIterator[TransactionEvent]:
-    print(event.account_id, event.tx_hash)
+client = TonapiWebSocket(
+    api_key: str,
+    network: Network,
+    *,
+    base_url: str | None = None,
+    session: aiohttp.ClientSession | None = None,
+    headers: dict[str, str] | None = None,
+    reconnect_policy: ReconnectPolicy | None = None,
+    on_state_change: Callable[[ConnectionState], Any] | None = None,
+    ping_interval: float = 15.0,
+    subscribe_timeout: float = 30.0,
+)
 ```
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| accounts | list[str] \| None | None | Account addresses to monitor (any format) |
-| operations | list[str] \| None | None | Filter by operation codes (hex, e.g. `"0x0f8a7ea5"`) |
-| stop | asyncio.Event \| None | None | Set to stop the subscription |
+| api_key | str | — | API key |
+| network | `Network` | — | `Network.MAINNET` or `Network.TESTNET` |
+| base_url | str \| None | None | Custom base URL (overrides network) |
+| session | aiohttp.ClientSession \| None | None | External session (not closed by client) |
+| headers | dict[str, str] \| None | None | Additional HTTP headers |
+| reconnect_policy | `ReconnectPolicy` \| None | None | Custom reconnect policy |
+| on_state_change | Callable \| None | None | Callback on connection state changes |
+| ping_interval | float | 15.0 | Seconds between ping messages (API recommends 15s) |
+| subscribe_timeout | float | 30.0 | Seconds to wait for subscribe response |
 
-Returns: `AsyncIterator[TransactionEvent]`
+Connects to `{base_url}/streaming/v2/ws` (converts https:// to wss://).
 
-### subscribe_blocks
+## start()
 
-Subscribe to new blocks.
+Start the transport: create session, subscribe, dispatch notifications to handlers. Blocks until `stop()` is called.
 
 ```python
-async for event in streaming.sse.subscribe_blocks(
-    workchain: Workchain | None = None,
-    stop: asyncio.Event | None = None,
-) -> AsyncIterator[BlockEvent]:
-    print(event.workchain, event.seqno)
+await client.start(
+    addresses: list[str] | None = None,
+    *,
+    trace_external_hash_norms: list[str] | None = None,
+    include_address_book: bool = False,
+    include_metadata: bool = False,
+    supported_action_types: list[str] | None = None,
+)
 ```
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| workchain | `Workchain` \| None | None | Filter by workchain (`Workchain.MASTERCHAIN` or `Workchain.BASECHAIN`) |
-| stop | asyncio.Event \| None | None | Set to stop the subscription |
+| addresses | list[str] \| None | None | Addresses to monitor (any form) |
+| trace_external_hash_norms | list[str] \| None | None | Trace hashes for trace subscriptions |
+| include_address_book | bool | False | Include DNS-resolved names in notifications |
+| include_metadata | bool | False | Include token metadata in notifications |
+| supported_action_types | list[str] \| None | None | Client-supported action types |
 
-Returns: `AsyncIterator[BlockEvent]`
+## stop()
 
-### subscribe_traces
-
-Subscribe to execution traces.
+Stop transport and release resources. Safe to call multiple times.
 
 ```python
-async for event in streaming.sse.subscribe_traces(
-    accounts: list[str] | None = None,
-    stop: asyncio.Event | None = None,
-) -> AsyncIterator[TraceEvent]:
-    print(event.hash, event.accounts)
+await client.stop()
+```
+
+## Decorator Handlers
+
+Register handlers before calling `start()`. Use as decorators or direct calls.
+
+### on_transactions
+
+```python
+@client.on_transactions(min_finality=Finality.FINALIZED)
+async def handle(event: TransactionsNotification) -> None:
+    for tx in event.transactions:
+        print(tx)
 ```
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| accounts | list[str] \| None | None | Account addresses to monitor |
-| stop | asyncio.Event \| None | None | Set to stop the subscription |
+| min_finality | `Finality` \| str \| None | None | Minimum finality level filter |
 
-Returns: `AsyncIterator[TraceEvent]`
-
-### subscribe_mempool
-
-Subscribe to mempool messages.
+### on_actions
 
 ```python
-async for event in streaming.sse.subscribe_mempool(
-    accounts: list[str] | None = None,
-    stop: asyncio.Event | None = None,
-) -> AsyncIterator[MempoolEvent]:
-    print(event.boc)
+@client.on_actions(min_finality=Finality.FINALIZED, action_types=["jetton_transfer"])
+async def handle(event: ActionsNotification) -> None:
+    for action in event.actions:
+        print(action)
 ```
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| accounts | list[str] \| None | None | Account addresses to monitor |
-| stop | asyncio.Event \| None | None | Set to stop the subscription |
+| min_finality | `Finality` \| str \| None | None | Minimum finality level filter |
+| action_types | list[str] \| None | None | Filter by action types |
 
-Returns: `AsyncIterator[MempoolEvent]`
-
-## WebSocket Subscriptions
-
-WebSocket transport (`streaming.ws`) has the same four methods with identical signatures:
-
-- `subscribe_transactions(accounts, operations, stop)`
-- `subscribe_blocks(workchain, stop)`
-- `subscribe_traces(accounts, stop)`
-- `subscribe_mempool(accounts, stop)`
-
-SSE is simpler (one-way, POST-based). WebSocket is bidirectional.
-
-## Event Models
-
-| Model | Fields |
-|-------|--------|
-| `TransactionEvent` | `account_id: str`, `lt: int`, `tx_hash: str` |
-| `BlockEvent` | `workchain: int`, `shard: str`, `seqno: int`, `root_hash: str`, `file_hash: str` |
-| `TraceEvent` | `accounts: list[str]`, `hash: str` |
-| `MempoolEvent` | `boc: str`, `involved_accounts: list[str] \| None` |
-
-All models are Pydantic `BaseModel` subclasses with `model_dump_json()` support.
-
-## Stopping a Subscription
-
-Use `asyncio.Event` to signal stop:
+### on_traces
 
 ```python
-stop = asyncio.Event()
-
-async def stop_after(seconds: float) -> None:
-    await asyncio.sleep(seconds)
-    stop.set()
-
-asyncio.create_task(stop_after(30))
-
-async for event in streaming.sse.subscribe_transactions(
-    accounts=["EQ..."],
-    stop=stop,
-):
-    print(event)
+@client.on_traces(min_finality=Finality.FINALIZED)
+async def handle(event: TraceNotification) -> None:
+    print(event.trace_external_hash_norm)
 ```
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| min_finality | `Finality` \| str \| None | None | Minimum finality level filter |
+
+### on_account_states
+
+```python
+@client.on_account_states()
+async def handle(event: AccountStateNotification) -> None:
+    print(event.account, event.state)
+```
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| min_finality | `Finality` \| str \| None | None | Minimum finality (PENDING not supported, raises ValueError) |
+
+### on_jettons
+
+```python
+@client.on_jettons()
+async def handle(event: JettonsNotification) -> None:
+    print(event.jetton)
+```
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| min_finality | `Finality` \| str \| None | None | Minimum finality (PENDING not supported, raises ValueError) |
+
+### on_trace_invalidated
+
+```python
+@client.on_trace_invalidated
+async def handle(event: TraceInvalidatedNotification) -> None:
+    print(event.trace_external_hash_norm)
+```
+
+No parameters.
+
+## Finality Levels
+
+| Level | Enum | Description |
+|-------|------|-------------|
+| Pending | `Finality.PENDING` | Transaction seen but not yet in a block |
+| Confirmed | `Finality.CONFIRMED` | In a block but not yet finalized by validators |
+| Finalized | `Finality.FINALIZED` | Irreversibly confirmed by validator consensus |
+
+`min_finality` filters: handler receives events at this level and above. E.g., `CONFIRMED` receives confirmed + finalized.
+
+## Notification Models
+
+| Model | Type field | Key fields |
+|-------|-----------|------------|
+| `TransactionsNotification` | "transactions" | `finality`, `trace_external_hash_norm`, `transactions`, `address_book`, `metadata` |
+| `ActionsNotification` | "actions" | `finality`, `trace_external_hash_norm`, `actions`, `address_book`, `metadata` |
+| `TraceNotification` | "trace" | `finality`, `trace_external_hash_norm`, `trace`, `transactions`, `actions`, `address_book`, `metadata` |
+| `AccountStateNotification` | "account_state_change" | `finality`, `account`, `state` |
+| `JettonsNotification` | "jettons_change" | `finality`, `jetton`, `address_book`, `metadata` |
+| `TraceInvalidatedNotification` | "trace_invalidated" | `trace_external_hash_norm` |
+
+All notification models with finality have properties: `is_pending`, `is_confirmed`, `is_finalized`.
+
+`StreamNotification` is a union type alias of all notification models.
+
+## Dynamic Subscription (WebSocket Only)
+
+### dynamic_subscribe
+
+Replace the current subscription. Can only be called while WebSocket is active (after `start()`).
+
+```python
+await client.dynamic_subscribe(
+    *,
+    addresses: list[str] | None = None,
+    trace_external_hash_norms: list[str] | None = None,
+    types: list[str | EventType] | None = None,
+    min_finality: Finality | str = Finality.FINALIZED,
+    include_address_book: bool = False,
+    include_metadata: bool = False,
+    action_types: list[str | ActionType] | None = None,
+    supported_action_types: list[str] | None = None,
+)
+```
+
+Raises `RuntimeError` if no active connection. Raises `TONAPIStreamingError` if server rejects.
+
+### dynamic_unsubscribe
+
+Remove addresses or trace hashes from current subscription.
+
+```python
+await client.dynamic_unsubscribe(
+    *,
+    addresses: list[str] | None = None,
+    trace_external_hash_norms: list[str] | None = None,
+)
+```
+
+### wait_subscribed
+
+Wait until connection reaches SUBSCRIBED state.
+
+```python
+await client.wait_subscribed(timeout: float | None = None)
+```
+
+Raises `asyncio.TimeoutError` if timeout exceeded.
+
+## Connection State
+
+```python
+from pytonapi.streaming import ConnectionState
+```
+
+| State | Value | Description |
+|-------|-------|-------------|
+| IDLE | "idle" | Not connected |
+| CONNECTING | "connecting" | Establishing connection |
+| SUBSCRIBED | "subscribed" | Active subscription |
+| RECONNECTING | "reconnecting" | Lost connection, attempting reconnect |
+
+Properties: `client.state`, `client.is_subscribed`, `client.is_connecting`, `client.is_reconnecting`.
 
 ## ReconnectPolicy
 
@@ -176,45 +266,59 @@ async for event in streaming.sse.subscribe_transactions(
 from pytonapi.types import ReconnectPolicy
 
 policy = ReconnectPolicy(
-    max_reconnects=10,   # max attempts before giving up (-1 for unlimited)
+    max_reconnects=10,   # max attempts before giving up
     delay=0.5,           # initial delay in seconds
     max_delay=10.0,      # maximum delay
     backoff_factor=2.0,  # exponential backoff multiplier
 )
-
-streaming = TonapiStreaming("api_key", Network.MAINNET, reconnect_policy=policy)
 ```
 
 Default: `max_reconnects=10, delay=0.5, max_delay=10.0, backoff_factor=2.0`.
 
+## Fatal Errors
+
+These errors stop the connection immediately without reconnect attempts:
+
+- All client errors except 429 (400, 401, 403, 404, 405, 409, 422)
+
+Only `TONAPIServerError` (5xx), `TONAPITooManyRequestsError` (429), and `TONAPIStreamingError` trigger automatic reconnection.
+
+After an ungraceful disconnect (crash, killed process) the server may hold ghost sessions for an extended period. Always call `stop()` in a `finally` block.
+
 ## Opcode Filtering
 
-Filter transactions by opcode using the `operations` parameter:
+The streaming API delivers all transactions for subscribed addresses. Filter by opcode inside the handler:
 
 ```python
-from pytonapi.types import Opcode
+JETTON_TRANSFER = "0x0f8a7ea5"
+JETTON_TRANSFER_NOTIFICATION = "0x7362d09c"
 
-async for event in streaming.sse.subscribe_transactions(
-    accounts=["EQ..."],
-    operations=[Opcode.JETTON_TRANSFER, Opcode.JETTON_NOTIFY],
-):
-    print(f"Jetton activity: {event.tx_hash}")
+@client.on_transactions(min_finality=Finality.FINALIZED)
+async def on_jetton_activity(event: TransactionsNotification) -> None:
+    for tx in event.transactions:
+        in_msg = tx.get("in_msg", {})
+        opcode = in_msg.get("opcode")
+        if opcode in (JETTON_TRANSFER, JETTON_TRANSFER_NOTIFICATION):
+            print(f"Jetton activity (opcode {opcode}): {tx.get('hash')}")
 ```
 
-Well-known opcodes are available in the `Opcode` enum (50+ entries including `JETTON_TRANSFER`, `NFT_TRANSFER`, `MULTISIG_NEW_ORDER`, etc.).
+Opcodes are hex strings (e.g. `"0x7362d09c"`).
 
 ## Runner Example
 
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/run.py streaming sse \
-    --accounts EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2 \
-    --subscribe transactions \
+    --addresses EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2 \
+    --types transactions \
+    --finality finalized \
     --duration 30
 
 python3 ${CLAUDE_SKILL_DIR}/scripts/run.py streaming ws \
-    --accounts EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2 \
-    --subscribe transactions,blocks \
+    --addresses EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2 \
+    --types transactions,actions \
+    --finality pending \
+    --include-address-book \
     --duration 60
 ```
 
-Runner streaming params: `--subscribe` (comma-separated: transactions, blocks, traces, mempool), `--accounts`, `--operations`, `--workchain`, `--duration` (seconds, default 60).
+Runner streaming params: `--types` (comma-separated event types), `--finality`, `--addresses`, `--trace-hashes`, `--include-address-book`, `--include-metadata`, `--supported-action-types`, `--duration` (seconds, default 60).

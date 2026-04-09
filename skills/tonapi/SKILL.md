@@ -52,7 +52,7 @@ A key unlocks higher rate limits for production use. Get one at [tonconsole.com]
 | Execution traces                               | `references/traces.md`         | `traces get_trace --trace-id ...`                   |
 | API status, address parsing                    | `references/utilities.md`      | `utilities status`                                  |
 | Wallet info, seqno, auth                       | `references/wallet.md`         | `wallet get_info --account-id EQ...`                |
-| Real-time events (SSE/WebSocket)               | `references/streaming.md`      | `streaming sse --subscribe transactions`            |
+| Real-time events (SSE/WebSocket)               | `references/streaming.md`      | `streaming sse --types transactions`                |
 | Webhooks (push notifications)                  | `references/webhooks.md`       | — (generate code)                                   |
 
 ## Runner
@@ -62,7 +62,7 @@ reference the script path:
 
 ```
 python3 ${CLAUDE_SKILL_DIR}/scripts/run.py <resource> <method> [--param value ...]
-python3 ${CLAUDE_SKILL_DIR}/scripts/run.py streaming <transport> [--subscribe type ...]
+python3 ${CLAUDE_SKILL_DIR}/scripts/run.py streaming <transport> [--types type ...]
 ```
 
 Requires `pytonapi` package installed (`pip install pytonapi`).
@@ -127,8 +127,11 @@ For building and signing transactions, recommend `tonutils` (`pip install tonuti
 ```python
 from pytonapi.rest import TonapiRestClient
 from pytonapi.types import Network, Workchain, Opcode, ApiKey, RetryPolicy, RetryRule, ReconnectPolicy, DEFAULT_RETRY_POLICY, DEFAULT_RECONNECT_POLICY
-from pytonapi.streaming import TonapiStreaming, TonapiSSE, TonapiWebSocket
-from pytonapi.streaming import BlockEvent, TransactionEvent, TraceEvent, MempoolEvent
+from pytonapi.streaming import TonapiSSE, TonapiWebSocket
+from pytonapi.streaming import Finality, ConnectionState, EventType, ActionType
+from pytonapi.streaming import TransactionsNotification, ActionsNotification, TraceNotification
+from pytonapi.streaming import AccountStateNotification, JettonsNotification, TraceInvalidatedNotification
+from pytonapi.streaming import AccountState, JettonWallet, StreamNotification
 from pytonapi.webhook import TonapiWebhookClient, TonapiWebhookDispatcher, TonapiWebhook
 from pytonapi.webhook import WebhookEventType, AccountTxEvent, MempoolMsgEvent, OpcodeMsgEvent, NewContractsEvent
 from pytonapi.utils import raw_to_userfriendly, userfriendly_to_raw, to_nano, to_amount

@@ -72,15 +72,21 @@ finally:
 
 ```python
 import asyncio
-from pytonapi.streaming import TonapiStreaming, TransactionEvent
+from pytonapi.streaming import Finality, TonapiSSE, TransactionsNotification
 from pytonapi.types import Network
 
+client = TonapiSSE("your_api_key", Network.MAINNET)
+
+@client.on_transactions(min_finality=Finality.FINALIZED)
+async def handle_tx(event: TransactionsNotification) -> None:
+    for tx in event.transactions:
+        print(tx)
+
 async def main() -> None:
-    async with TonapiStreaming("your_api_key", Network.MAINNET) as streaming:
-        async for event in streaming.sse.subscribe_transactions(
-            accounts=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"],
-        ):
-            print(event)
+    try:
+        await client.start(addresses=["EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2"])
+    finally:
+        await client.stop()
 
 asyncio.run(main())
 ```
@@ -187,6 +193,7 @@ All SDK exceptions inherit from `TONAPIError`:
 - `TONAPISessionNotCreatedError` — session not created before request
 - `TONAPIStreamingError` — streaming transport error
 - `TONAPIConnectionLostError` — reconnect limit exhausted during streaming
+
 - `TONAPIValidationError` — response body did not match expected Pydantic model
 - `TONAPIRetryLimitError` — all retry attempts exhausted
 
