@@ -1,19 +1,35 @@
-from pytonapi.streaming.client import TonapiStreaming
 from pytonapi.streaming.models import (
-    BlockEvent,
-    MempoolEvent,
-    TraceEvent,
-    TransactionEvent,
+    AccountState,
+    AccountStateNotification,
+    ActionsNotification,
+    ActionType,
+    ConnectionState,
+    EventType,
+    Finality,
+    JettonsNotification,
+    JettonWallet,
+    StreamNotification,
+    TraceInvalidatedNotification,
+    TraceNotification,
+    TransactionsNotification,
 )
 from pytonapi.streaming.sse import TonapiSSE
 from pytonapi.streaming.ws import TonapiWebSocket
 
 __all__ = [
-    "BlockEvent",
-    "MempoolEvent",
+    "AccountState",
+    "AccountStateNotification",
+    "ActionType",
+    "ActionsNotification",
+    "ConnectionState",
+    "EventType",
+    "Finality",
+    "JettonWallet",
+    "JettonsNotification",
+    "StreamNotification",
     "TonapiSSE",
-    "TonapiStreaming",
     "TonapiWebSocket",
-    "TraceEvent",
-    "TransactionEvent",
+    "TraceInvalidatedNotification",
+    "TraceNotification",
+    "TransactionsNotification",
 ]

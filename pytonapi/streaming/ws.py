@@ -1,229 +1,282 @@
+from __future__ import annotations
+
 import asyncio
+import contextlib
 import json
 import typing as t
 
 import aiohttp
 
 from pytonapi.exceptions import (
-    STREAMING_RECOVERABLE,
-    TONAPIConnectionLostError,
     TONAPIError,
     TONAPIStreamingError,
     raise_for_status,
 )
-from pytonapi.streaming.models import (
-    BlockEvent,
-    MempoolEvent,
-    TraceEvent,
-    TransactionEvent,
-)
-from pytonapi.types import (
-    DEFAULT_RECONNECT_POLICY,
-    ReconnectPolicy,
-    Workchain,
-)
+from pytonapi.streaming.base import StreamingBase
+from pytonapi.streaming.models import ActionType, ConnectionState, EventType, Finality
+from pytonapi.types import Network, ReconnectPolicy
+
+_PING_INTERVAL: t.Final[float] = 15.0
 
 
-class TonapiWebSocket:
-    """WebSocket streaming transport for TONAPI."""
+class TonapiWebSocket(StreamingBase):
+    """WebSocket streaming transport for TONAPI.
 
-    _METHOD_MAP: t.Final[dict[str, str]] = {
-        "subscribe_block": "block",
-        "subscribe_account": "account_transaction",
-        "subscribe_trace": "trace",
-        "subscribe_mempool": "mempool_message",
-    }
+    Maintains a WebSocket connection with automatic reconnection
+    and periodic ping keepalives (every 15 seconds as recommended
+    by the API documentation).
+
+    Unlike SSE, WebSocket supports dynamic subscription management
+    after the initial connection via ``dynamic_subscribe()`` and
+    ``dynamic_unsubscribe()``.
+
+    An API key is required for streaming connections.
+    """
 
     def __init__(
         self,
-        base_url: str,
-        session: aiohttp.ClientSession,
-        reconnect_policy: ReconnectPolicy = DEFAULT_RECONNECT_POLICY,
+        api_key: str,
+        network: Network,
+        *,
+        base_url: str | None = None,
+        session: aiohttp.ClientSession | None = None,
+        headers: dict[str, str] | None = None,
+        reconnect_policy: ReconnectPolicy | None = None,
+        on_state_change: t.Callable[[ConnectionState], t.Any] | None = None,
+        ping_interval: float = _PING_INTERVAL,
+        subscribe_timeout: float = 30.0,
     ) -> None:
-        """Initialize WebSocket transport.
+        super().__init__(
+            api_key=api_key,
+            network=network,
+            base_url=base_url,
+            session=session,
+            headers=headers,
+            reconnect_policy=reconnect_policy,
+            on_state_change=on_state_change,
+        )
+        ws_url = self._base_url.rstrip("/").replace("https://", "wss://").replace("http://", "ws://")
+        self._ws_url = f"{ws_url}/streaming/v2/ws"
+        self._ping_counter = 0
+        self._ping_interval = ping_interval
+        self._subscribe_timeout = subscribe_timeout
+        self._ws: aiohttp.ClientWebSocketResponse | None = None
+        self._msg_counter: int = 0
+        self._pending_responses: dict[str, asyncio.Future[dict[str, t.Any]]] = {}
 
-        :param base_url: Base API URL (``https://`` is replaced with ``wss://``).
-        :param session: Shared ``aiohttp.ClientSession``.
-        :param reconnect_policy: Reconnection policy.
-        """
-        ws_url = base_url.rstrip("/").replace("https://", "wss://").replace("http://", "ws://")
-        self._ws_url = f"{ws_url}/v2/websocket"
-        self._session = session
-        self._reconnect_policy = reconnect_policy
+    def _next_id(self) -> str:
+        self._msg_counter += 1
+        return str(self._msg_counter)
 
-    async def subscribe_transactions(
+    async def dynamic_subscribe(
         self,
-        accounts: list[str] | None = None,
-        operations: list[str] | None = None,
-        stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[TransactionEvent]:
-        """Subscribe to finalized account transactions.
+        *,
+        addresses: list[str] | None = None,
+        trace_external_hash_norms: list[str] | None = None,
+        types: list[str | EventType] | None = None,
+        min_finality: Finality | str = Finality.FINALIZED,
+        include_address_book: bool = False,
+        include_metadata: bool = False,
+        action_types: list[str | ActionType] | None = None,
+        supported_action_types: list[str] | None = None,
+    ) -> None:
+        """Replace the current subscription (snapshot semantics).
 
-        :param accounts: Account IDs to track, or ``None`` for all.
-        :param operations: Operation filters (opcode names or hex strings).
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of ``TransactionEvent``.
+        Can only be called while the WebSocket connection is active
+        (i.e. after ``start()`` has established the initial subscription).
+
+        :param addresses: Wallet/contract addresses to monitor, in any form.
+        :param trace_external_hash_norms: Trace hashes for trace subscriptions.
+        :param types: Event types to receive.
+        :param min_finality: Minimum finality level.
+        :param include_address_book: Include DNS-resolved names.
+        :param include_metadata: Include token metadata.
+        :param action_types: Filter actions by type.
+        :param supported_action_types: Client-supported action types.
+        :raises RuntimeError: If no active WebSocket connection.
+        :raises TONAPIStreamingError: If the server rejects the subscription.
         """
-        params: list[str] = []
-        if accounts:
-            for acc in accounts:
-                if operations:
-                    params.append(f"{acc};operations={','.join(operations)}")
-                else:
-                    params.append(acc)
-        else:
-            params.append("ALL")
+        ws = self._require_ws()
+        msg_id = self._next_id()
 
-        async for data in self._stream("subscribe_account", params, stop):
-            yield TransactionEvent.model_validate(data)
+        msg: dict[str, t.Any] = {
+            "operation": "subscribe",
+            "id": msg_id,
+            "min_finality": min_finality.value if isinstance(min_finality, Finality) else min_finality,
+            "include_address_book": include_address_book,
+            "include_metadata": include_metadata,
+        }
+        if addresses:
+            msg["addresses"] = addresses
+        if trace_external_hash_norms:
+            msg["trace_external_hash_norms"] = trace_external_hash_norms
+        if types:
+            msg["types"] = [et.value if hasattr(et, "value") else et for et in types]
+        if action_types:
+            msg["action_types"] = [a.value if hasattr(a, "value") else a for a in action_types]
+        if supported_action_types:
+            msg["supported_action_types"] = supported_action_types
 
-    async def subscribe_blocks(
+        response = await self._send_and_wait(ws, msg, msg_id)
+        if response.get("status") != "subscribed":
+            error_msg = str(response.get("error", response))
+            raise TONAPIStreamingError(f"WebSocket subscribe failed: {error_msg}")
+
+    async def dynamic_unsubscribe(
         self,
-        workchain: Workchain | None = None,
-        stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[BlockEvent]:
-        """Subscribe to new block notifications.
+        *,
+        addresses: list[str] | None = None,
+        trace_external_hash_norms: list[str] | None = None,
+    ) -> None:
+        """Remove addresses or trace hashes from the current subscription.
 
-        :param workchain: Workchain filter, or ``None`` for all.
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of ``BlockEvent``.
+        :param addresses: Addresses to remove.
+        :param trace_external_hash_norms: Trace hashes to remove.
+        :raises RuntimeError: If no active WebSocket connection.
+        :raises TONAPIStreamingError: If the server rejects the request.
         """
-        params: list[str] = []
-        if workchain is not None:
-            params.append(f"workchain={int(workchain)}")
+        ws = self._require_ws()
+        msg_id = self._next_id()
 
-        async for data in self._stream("subscribe_block", params, stop):
-            yield BlockEvent.model_validate(data)
+        msg: dict[str, t.Any] = {
+            "operation": "unsubscribe",
+            "id": msg_id,
+        }
+        if addresses:
+            msg["addresses"] = addresses
+        if trace_external_hash_norms:
+            msg["trace_external_hash_norms"] = trace_external_hash_norms
 
-    async def subscribe_traces(
+        response = await self._send_and_wait(ws, msg, msg_id)
+        if response.get("status") != "unsubscribed":
+            error_msg = str(response.get("error", response))
+            raise TONAPIStreamingError(f"WebSocket unsubscribe failed: {error_msg}")
+
+    def _require_ws(self) -> aiohttp.ClientWebSocketResponse:
+        if self._ws is None or self._ws.closed:
+            raise RuntimeError("No active WebSocket connection. Call start() first and wait for the SUBSCRIBED state.")
+        return self._ws
+
+    async def _send_and_wait(
         self,
-        accounts: list[str] | None = None,
-        stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[TraceEvent]:
-        """Subscribe to completed trace notifications.
+        ws: aiohttp.ClientWebSocketResponse,
+        msg: dict[str, t.Any],
+        msg_id: str,
+    ) -> dict[str, t.Any]:
+        """Send a message and wait for the correlated response."""
+        future: asyncio.Future[dict[str, t.Any]] = asyncio.get_running_loop().create_future()
+        self._pending_responses[msg_id] = future
+        try:
+            await ws.send_json(msg)
+            return await asyncio.wait_for(future, timeout=self._subscribe_timeout)
+        except asyncio.CancelledError as err:
+            if future.cancelled():
+                raise TONAPIStreamingError("WebSocket connection lost while waiting for response") from err
+            raise
+        finally:
+            self._pending_responses.pop(msg_id, None)
 
-        :param accounts: Account IDs to track, or ``None`` for all.
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of ``TraceEvent``.
-        """
-        params: list[str] = []
-        if accounts:
-            params.extend(accounts)
-        else:
-            params.append("ALL")
-
-        async for data in self._stream("subscribe_trace", params, stop):
-            yield TraceEvent.model_validate(data)
-
-    async def subscribe_mempool(
+    async def _open_stream(
         self,
-        accounts: list[str] | None = None,
+        params: dict[str, t.Any],
         stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[MempoolEvent]:
-        """Subscribe to pending inbound messages.
+    ) -> t.AsyncGenerator[dict[str, t.Any], None]:
+        subscribe_msg: dict[str, t.Any] = {
+            "operation": "subscribe",
+            "id": self._next_id(),
+            **params,
+        }
+        try:
+            async with self._session.ws_connect(self._ws_url) as ws:  # type: ignore[union-attr]
+                self._ws = ws
+                await self._send_subscribe(ws, subscribe_msg)
+                await self._set_state(ConnectionState.SUBSCRIBED)
 
-        :param accounts: Account IDs to filter, or ``None`` for all.
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of ``MempoolEvent``.
-        """
-        params: list[str] = []
-        if accounts:
-            params.append(f"accounts={','.join(accounts)}")
+                ping_task = asyncio.create_task(self._ping_loop(ws, stop))
+                try:
+                    async for data in self._read_messages(ws, stop):
+                        yield data
+                finally:
+                    ping_task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await ping_task
+                    self._ws = None
+                    for future in self._pending_responses.values():
+                        if not future.done():
+                            future.cancel()
+                    self._pending_responses.clear()
+        except aiohttp.WSServerHandshakeError as exc:
+            raise_for_status(
+                exc.status,
+                exc.message or "",
+                "",
+            )
 
-        async for data in self._stream("subscribe_mempool", params, stop):
-            yield MempoolEvent.model_validate(data)
-
-    async def _stream(
+    async def _read_messages(
         self,
-        method: str,
-        params: list[str],
+        ws: aiohttp.ClientWebSocketResponse,
         stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[dict[str, t.Any]]:
-        """Open a WebSocket connection with automatic reconnection.
-
-        :param method: JSON-RPC subscribe method name.
-        :param params: JSON-RPC params array.
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of parsed event data dicts.
-        :raises TONAPIConnectionLostError: When reconnect limit is exceeded.
-        """
-        event_method = self._METHOD_MAP[method]
-        attempt = 0
-
-        while not (stop and stop.is_set()):
-            try:
-                async with self._session.ws_connect(self._ws_url) as ws:
-                    await self._subscribe(ws, method, params)
-                    attempt = 0
-
-                    while True:
-                        if stop and stop.is_set():
-                            return
-                        try:
-                            msg = await asyncio.wait_for(
-                                ws.receive(),
-                                timeout=1.0,
-                            )
-                        except asyncio.TimeoutError:
-                            continue
-                        if msg.type == aiohttp.WSMsgType.TEXT:
-                            data = json.loads(msg.data)
-                            if data.get("method") == event_method:
-                                yield data["params"]
-                        elif msg.type in (
-                            aiohttp.WSMsgType.CLOSED,
-                            aiohttp.WSMsgType.ERROR,
-                            aiohttp.WSMsgType.CLOSING,
-                        ):
-                            break
-
-            except aiohttp.WSServerHandshakeError as exc:
-                raise_for_status(
-                    exc.status,
-                    exc.message or "",
-                    "",
-                )
-            except TONAPIError as exc:
-                if not isinstance(exc, STREAMING_RECOVERABLE):
-                    raise
-            except Exception:
-                pass
-
+    ) -> t.AsyncGenerator[dict[str, t.Any], None]:
+        """Read notification messages from the WebSocket, routing control responses to pending futures."""
+        while True:
             if stop and stop.is_set():
                 return
+            try:
+                msg = await asyncio.wait_for(ws.receive(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
+            if msg.type == aiohttp.WSMsgType.TEXT:
+                try:
+                    data = json.loads(msg.data)
+                except json.JSONDecodeError as exc:
+                    raise TONAPIStreamingError(f"Invalid JSON from WebSocket: {exc}") from exc
+                msg_id = data.get("id")
+                if msg_id and msg_id in self._pending_responses and "type" not in data:
+                    future = self._pending_responses.pop(msg_id)
+                    if not future.done():
+                        future.set_result(data)
+                    continue
+                if "type" in data:
+                    yield data
+            elif msg.type in (
+                aiohttp.WSMsgType.CLOSED,
+                aiohttp.WSMsgType.ERROR,
+                aiohttp.WSMsgType.CLOSING,
+            ):
+                return
 
-            attempt += 1
-            if self._reconnect_policy.max_reconnects != -1 and attempt > self._reconnect_policy.max_reconnects:
-                raise TONAPIConnectionLostError(attempts=attempt)
-
-            delay = self._reconnect_policy.delay_for_attempt(attempt - 1)
-            await asyncio.sleep(delay)
-
-    @staticmethod
-    async def _subscribe(
+    async def _ping_loop(
+        self,
         ws: aiohttp.ClientWebSocketResponse,
-        method: str,
-        params: list[str],
+        stop: asyncio.Event | None = None,
     ) -> None:
-        """Send a JSON-RPC subscribe request and validate the response.
+        """Send periodic ping messages to keep the connection alive."""
+        while not (stop and stop.is_set()):
+            await asyncio.sleep(self._ping_interval)
+            if ws.closed:
+                return
+            self._ping_counter += 1
+            try:
+                await ws.send_json(
+                    {
+                        "operation": "ping",
+                        "id": f"ping-{self._ping_counter}",
+                    }
+                )
+            except (ConnectionError, aiohttp.ClientError):
+                return
 
-        :param ws: Active WebSocket connection.
-        :param method: JSON-RPC method name.
-        :param params: JSON-RPC params array.
-        :raises TONAPIStreamingError: On subscription failure.
-        """
-        request: dict[str, t.Any] = {
-            "id": 1,
-            "jsonrpc": "2.0",
-            "method": method,
-        }
-        if params:
-            request["params"] = params
+    async def _send_subscribe(
+        self,
+        ws: aiohttp.ClientWebSocketResponse,
+        subscribe_msg: dict[str, t.Any],
+    ) -> None:
+        """Send a subscribe request and validate the response."""
+        await ws.send_json(subscribe_msg)
 
-        await ws.send_json(request)
-
-        response = await ws.receive_json()
-        if "error" in response:
-            raise TONAPIStreamingError(
-                f"WebSocket subscribe failed: {response['error']}",
+        response = await asyncio.wait_for(ws.receive_json(), timeout=self._subscribe_timeout)
+        if response.get("status") != "subscribed":
+            error_msg = str(response.get("error", response))
+            raise TONAPIError(
+                f"WebSocket subscribe failed: {error_msg}",
             )

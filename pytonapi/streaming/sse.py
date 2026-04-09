@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import codecs
 import json
@@ -6,189 +8,82 @@ import typing as t
 import aiohttp
 
 from pytonapi.exceptions import (
-    STREAMING_RECOVERABLE,
-    TONAPIConnectionLostError,
-    TONAPIError,
     TONAPIStreamingError,
     raise_for_status,
 )
-from pytonapi.streaming.models import (
-    BlockEvent,
-    MempoolEvent,
-    TraceEvent,
-    TransactionEvent,
-)
-from pytonapi.types import (
-    DEFAULT_RECONNECT_POLICY,
-    ReconnectPolicy,
-    Workchain,
-)
+from pytonapi.streaming.base import StreamingBase
+from pytonapi.streaming.models import ConnectionState
+from pytonapi.types import Network, ReconnectPolicy
 
 _HEARTBEAT_TIMEOUT: t.Final[float] = 30.0
 
 
-class TonapiSSE:
-    """SSE streaming transport for TONAPI."""
+class TonapiSSE(StreamingBase):
+    """SSE streaming transport for TONAPI.
+
+    Establishes a ``POST`` connection to the SSE endpoint and yields
+    parsed notification models as they arrive.  Keepalive comments
+    (``:`` lines) are handled transparently; the initial
+    ``{"status": "subscribed"}`` acknowledgement is skipped.
+
+    An API key is required for streaming connections.
+    """
 
     def __init__(
         self,
-        base_url: str,
-        session: aiohttp.ClientSession,
-        reconnect_policy: ReconnectPolicy = DEFAULT_RECONNECT_POLICY,
+        api_key: str,
+        network: Network,
+        *,
+        base_url: str | None = None,
+        session: aiohttp.ClientSession | None = None,
+        headers: dict[str, str] | None = None,
+        reconnect_policy: ReconnectPolicy | None = None,
+        on_state_change: t.Callable[[ConnectionState], t.Any] | None = None,
         heartbeat_timeout: float = _HEARTBEAT_TIMEOUT,
     ) -> None:
-        """Initialize SSE transport.
-
-        :param base_url: Base API URL.
-        :param session: Shared ``aiohttp.ClientSession``.
-        :param reconnect_policy: Reconnection policy.
-        :param heartbeat_timeout: Seconds without data before the connection
-            is considered dead. TONAPI sends heartbeats every 5 s, so
-            the default 30 s tolerates up to 6 missed heartbeats.
-        """
-        self._base_url = base_url.rstrip("/")
-        self._session = session
-        self._reconnect_policy = reconnect_policy
+        super().__init__(
+            api_key=api_key,
+            network=network,
+            base_url=base_url,
+            session=session,
+            headers=headers,
+            reconnect_policy=reconnect_policy,
+            on_state_change=on_state_change,
+        )
         self._heartbeat_timeout = heartbeat_timeout
 
-    async def subscribe_transactions(
+    async def _open_stream(
         self,
-        accounts: list[str] | None = None,
-        operations: list[str] | None = None,
+        params: dict[str, t.Any],
         stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[TransactionEvent]:
-        """Subscribe to finalized account transactions.
+    ) -> t.AsyncGenerator[dict[str, t.Any], None]:
+        url = f"{self._base_url}/streaming/v2/sse"
+        headers = {"Accept": "text/event-stream"}
+        if self._session is None:
+            raise RuntimeError("Session not created")
+        async with self._session.post(url, json=params, headers=headers) as response:
+            if response.status != 200:
+                text = await response.text()
+                content_type = response.headers.get("Content-Type", "")
+                raise_for_status(response.status, text, content_type)
+            async for data in self._read_notifications(response, stop):
+                if "status" in data and "type" not in data:
+                    await self._set_state(ConnectionState.SUBSCRIBED)
+                    continue
+                yield data
 
-        :param accounts: Account IDs to track, or ``None`` for all.
-        :param operations: Operation filters (opcode names or hex strings).
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of ``TransactionEvent``.
-        """
-        params: dict[str, str] = {
-            "accounts": ",".join(accounts) if accounts else "ALL",
-        }
-        if operations:
-            params["operations"] = ",".join(operations)
-
-        async for data in self._stream("/v2/sse/accounts/transactions", params, stop):
-            yield TransactionEvent.model_validate(data)
-
-    async def subscribe_blocks(
-        self,
-        workchain: Workchain | None = None,
-        stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[BlockEvent]:
-        """Subscribe to new block notifications.
-
-        :param workchain: Workchain filter, or ``None`` for all.
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of ``BlockEvent``.
-        """
-        params: dict[str, str] = {}
-        if workchain is not None:
-            params["workchain"] = str(int(workchain))
-
-        async for data in self._stream("/v2/sse/blocks", params, stop):
-            yield BlockEvent.model_validate(data)
-
-    async def subscribe_traces(
-        self,
-        accounts: list[str] | None = None,
-        stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[TraceEvent]:
-        """Subscribe to completed trace notifications.
-
-        :param accounts: Account IDs to track, or ``None`` for all.
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of ``TraceEvent``.
-        """
-        params: dict[str, str] = {
-            "accounts": ",".join(accounts) if accounts else "ALL",
-        }
-        async for data in self._stream("/v2/sse/accounts/traces", params, stop):
-            yield TraceEvent.model_validate(data)
-
-    async def subscribe_mempool(
-        self,
-        accounts: list[str] | None = None,
-        stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[MempoolEvent]:
-        """Subscribe to pending inbound messages.
-
-        :param accounts: Account IDs to filter, or ``None`` for all.
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of ``MempoolEvent``.
-        """
-        params: dict[str, str] = {}
-        if accounts:
-            params["accounts"] = ",".join(accounts)
-
-        async for data in self._stream("/v2/sse/mempool", params, stop):
-            yield MempoolEvent.model_validate(data)
-
-    async def _stream(
-        self,
-        path: str,
-        params: dict[str, str],
-        stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[dict[str, t.Any]]:
-        """Open an SSE stream with automatic reconnection.
-
-        :param path: API path.
-        :param params: Query parameters.
-        :param stop: Event to signal graceful shutdown, or ``None``.
-        :return: Async iterator of parsed JSON data dicts.
-        :raises TONAPIConnectionLostError: When reconnect limit is exceeded.
-        """
-        url = f"{self._base_url}{path}"
-        attempt = 0
-
-        while not (stop and stop.is_set()):
-            try:
-                async with self._session.get(url, params=params) as response:
-                    if response.status != 200:
-                        text = await response.text()
-                        content_type = response.headers.get("Content-Type", "")
-                        raise_for_status(
-                            response.status,
-                            text,
-                            content_type,
-                        )
-                    attempt = 0
-                    async for data in self._read_events(response, stop):
-                        yield data
-                    if stop and stop.is_set():
-                        return
-
-            except TONAPIError as exc:
-                if not isinstance(exc, STREAMING_RECOVERABLE):
-                    raise
-            except Exception:
-                pass
-
-            if stop and stop.is_set():
-                return
-
-            attempt += 1
-            if self._reconnect_policy.max_reconnects != -1 and attempt > self._reconnect_policy.max_reconnects:
-                raise TONAPIConnectionLostError(attempts=attempt)
-
-            delay = self._reconnect_policy.delay_for_attempt(attempt - 1)
-            await asyncio.sleep(delay)
-
-    async def _read_events(
+    async def _read_notifications(
         self,
         response: aiohttp.ClientResponse,
         stop: asyncio.Event | None = None,
-    ) -> t.AsyncIterator[dict[str, t.Any]]:
-        """Parse SSE text/event-stream into JSON data dicts.
+    ) -> t.AsyncGenerator[dict[str, t.Any], None]:
+        """Parse SSE text/event-stream into JSON notification dicts.
 
         :param response: Aiohttp response with ``text/event-stream`` body.
         :param stop: Event to signal graceful shutdown, or ``None``.
         :return: Async iterator of parsed data dicts.
         :raises TONAPIStreamingError: On heartbeat timeout.
         """
-        event_type = ""
         data_buf = ""
 
         async for raw_line in _read_lines(response, timeout=self._heartbeat_timeout):
@@ -197,8 +92,11 @@ class TonapiSSE:
 
             line = raw_line.rstrip("\r\n")
 
+            if line.startswith(":"):
+                continue
+
             if not line:
-                if event_type == "message" and data_buf:
+                if data_buf:
                     try:
                         parsed = json.loads(data_buf)
                     except json.JSONDecodeError as exc:
@@ -206,24 +104,31 @@ class TonapiSSE:
                             f"Invalid SSE JSON: {data_buf}",
                         ) from exc
                     yield parsed
-                event_type = ""
                 data_buf = ""
                 continue
 
-            if line.startswith("event:"):
-                event_type = line[6:].strip()
-            elif line.startswith("data:"):
-                data_buf += line[5:].strip()
-            elif line.startswith("id:"):
-                pass
+            if line.startswith("data:"):
+                data_buf += ("\n" if data_buf else "") + line[5:].strip()
+
+        if data_buf:
+            try:
+                parsed = json.loads(data_buf)
+            except json.JSONDecodeError as exc:
+                raise TONAPIStreamingError(
+                    f"Invalid SSE JSON: {data_buf}",
+                ) from exc
+            yield parsed
 
 
 async def _read_lines(
     response: aiohttp.ClientResponse,
     *,
     timeout: float,
-) -> t.AsyncIterator[str]:
+) -> t.AsyncGenerator[str, None]:
     """Read lines from a streaming response with heartbeat timeout.
+
+    Uses an incremental UTF-8 decoder to handle multi-byte characters
+    that may be split across chunk boundaries.
 
     :param response: Aiohttp streaming response.
     :param timeout: Seconds to wait before considering the connection dead.

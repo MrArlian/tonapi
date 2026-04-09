@@ -187,8 +187,8 @@ class TONAPIRetryLimitError(TONAPIError):
 
 STREAMING_RECOVERABLE: t.Final[tuple[type[TONAPIError], ...]] = (
     TONAPIServerError,
-    TONAPITooManyRequestsError,
     TONAPIStreamingError,
+    TONAPITooManyRequestsError,
 )
 
 TONAPI_STATUS_TO_EXCEPTION: t.Final[dict[int, type[TONAPIStatusError]]] = {
