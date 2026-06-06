@@ -79,7 +79,8 @@ class BaseClient:
         self._is_external_session = session is not None
         self._retry_policy = retry_policy
 
-    async def create_session(self: _Self) -> _Self:
+    @property
+    def session(self) -> ClientSession:
         """Create an ``aiohttp.ClientSession`` for making requests.
 
         If an external session was provided via the ``session`` parameter,
@@ -94,7 +95,7 @@ class BaseClient:
                 timeout=self._timeout,
             )
             self._is_external_session = False
-        return self
+        return self._session
 
     async def close_session(self) -> None:
         """Close the ``aiohttp.ClientSession``.
@@ -109,7 +110,6 @@ class BaseClient:
 
     async def __aenter__(self: _Self) -> _Self:
         """Enter the async context manager."""
-        await self.create_session()
         return self
 
     async def __aexit__(
@@ -202,10 +202,6 @@ class BaseClient:
         if headers:
             headers = {k: str(v) for k, v in headers.items() if v is not None}
 
-        if self._session is None or self._session.closed:
-            raise TONAPISessionNotCreatedError(self.__class__.__name__)
-
-        session = self._session
         last_error: Exception | None = None
         last_status: int | None = None
         max_attempts = 1
@@ -219,7 +215,7 @@ class BaseClient:
 
         for attempt in range(max_attempts):
             try:
-                async with session.request(
+                async with self.session.request(
                     method=method,
                     url=url,
                     params=params,
